@@ -1,0 +1,2405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>融资分析师</title>
+<style>
+:root {
+  --bg:#0D0D0D; --bg2:#141414; --bg3:#1A1A1A; --bg4:#222;
+  --border:#2A2A2A; --gold:#C9A84C; --gold-dim:rgba(201,168,76,0.12);
+  --text:#E8E8E8; --text-muted:#888; --text-dim:#555;
+  --green:#4CAF82; --green-bg:rgba(76,175,130,0.1);
+  --red:#E05050; --red-bg:rgba(224,80,80,0.1);
+  --blue:#5090E0; --blue-bg:rgba(80,144,224,0.1);
+  --amber:#E0A040; --amber-bg:rgba(224,160,64,0.1);
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;min-height:100vh}
+/* Header */
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.logo{width:36px;height:36px;background:var(--gold);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.header-info h1{font-size:16px;font-weight:700;color:var(--gold)}
+.header-info p{font-size:11px;color:var(--text-muted)}
+.header-badge{margin-left:auto;font-size:11px;background:var(--green-bg);color:var(--green);border:1px solid rgba(76,175,130,0.3);padding:3px 10px;border-radius:10px}
+/* Main */
+.main{max-width:680px;margin:0 auto;padding:16px}
+/* Card */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.card-title{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.card-title .dot{width:6px;height:6px;background:var(--gold);border-radius:50%;flex-shrink:0}
+.card-title h2{font-size:14px;font-weight:600;color:var(--gold)}
+/* Form */
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field.full{grid-column:1/-1}
+.field label{font-size:11px;color:var(--text-muted)}
+.field label .req{color:var(--red)}
+.field input,.field select,.field textarea{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border 0.2s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
+.field select option{background:var(--bg3)}
+.field-hint{font-size:11px;color:var(--text-dim);margin-top:2px}
+/* Tabs */
+.tabs{display:flex;gap:2px;background:var(--bg3);border-radius:8px;padding:3px;margin-bottom:14px}
+.tab{flex:1;padding:6px;text-align:center;font-size:12px;border-radius:6px;cursor:pointer;color:var(--text-muted);transition:all 0.2s}
+.tab.active{background:var(--bg4);color:var(--gold);font-weight:600}
+.tab-content{display:none}
+.tab-content.active{display:block}
+/* Button */
+.btn-primary{width:100%;padding:14px;background:var(--gold);color:#000;font-size:15px;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;transition:opacity 0.2s;margin-top:4px}
+.btn-primary:hover{opacity:0.9}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+.btn-secondary{padding:8px 16px;background:var(--bg3);color:var(--text-muted);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:13px}
+/* Error */
+.error-box{background:var(--red-bg);border:1px solid rgba(224,80,80,0.3);border-radius:8px;padding:10px 14px;color:var(--red);font-size:13px;margin-bottom:10px;display:none}
+/* Loading */
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+.loading-overlay.show{display:flex}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:var(--text-muted);font-size:13px}
+/* Result */
+#resultArea{display:none}
+/* Score */
+.score-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.score-circle{position:relative;width:80px;height:80px;flex-shrink:0}
+.score-circle svg{transform:rotate(-90deg)}
+.score-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;font-weight:800;line-height:1}
+.score-num small{font-size:10px;color:var(--text-muted);font-weight:400}
+.score-dims{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dim-item{font-size:11px}
+.dim-label{color:var(--text-muted);margin-bottom:2px}
+.dim-bar{height:3px;background:var(--bg4);border-radius:2px}
+.dim-fill{height:3px;border-radius:2px;transition:width 0.8s ease}
+/* Difficulty */
+.difficulty-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:4px 12px;border-radius:10px;font-weight:600;margin-bottom:10px}
+/* Profile */
+.profile-text{font-size:13px;color:var(--text);line-height:1.8;border-left:3px solid var(--gold);padding-left:12px}
+/* Channel */
+.channel-box{background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px}
+.channel-warning{background:var(--red-bg);border:1px solid rgba(224,80,80,0.2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--red);margin-bottom:8px}
+.channel-advice{font-size:13px;color:var(--text);line-height:1.7}
+/* Product card */
+.product-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;position:relative;overflow:hidden}
+.product-card.top1{border-color:rgba(201,168,76,0.4)}
+.product-card.top1::before{content:'首选';position:absolute;top:0;right:0;background:var(--gold);color:#000;font-size:10px;font-weight:700;padding:3px 8px;border-radius:0 var(--radius) 0 8px}
+.prod-header{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px}
+.prod-rank{width:24px;height:24px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold);flex-shrink:0;margin-top:1px}
+.prod-name{font-size:14px;font-weight:700;color:var(--text)}
+.prod-bank{font-size:11px;color:var(--text-muted);margin-top:2px}
+.prob-badge{margin-left:auto;font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap}
+.prob-high{background:var(--green-bg);color:var(--green);border:1px solid rgba(76,175,130,0.3)}
+.prob-mid{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(224,160,64,0.3)}
+.prob-low{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,80,0.3)}
+.prod-amounts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.amount-tag{background:var(--bg4);border-radius:6px;padding:4px 10px;font-size:12px}
+.amount-tag.main{background:var(--gold-dim);color:var(--gold);font-weight:600}
+.debt-calc{font-size:11px;color:var(--text-muted);background:var(--bg4);border-radius:6px;padding:5px 10px;margin-bottom:10px;font-family:monospace}
+.debt-calc span{color:var(--amber)}
+/* Gap analysis */
+.gap-section{background:var(--bg4);border-radius:8px;padding:10px;margin-top:8px}
+.gap-title{font-size:11px;color:var(--text-muted);margin-bottom:6px;font-weight:600}
+.gap-item{display:flex;align-items:flex-start;gap:6px;font-size:12px;color:var(--text);margin-bottom:5px;line-height:1.5}
+.gap-item:last-child{margin-bottom:0}
+.gap-icon{flex-shrink:0;margin-top:1px}
+/* Section */
+.section-title{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.section-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.section-title h3{font-size:14px;font-weight:600}
+/* Path */
+.path-item{display:flex;gap:10px;margin-bottom:10px}
+.path-num{width:24px;height:24px;background:var(--gold);color:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.path-content h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.path-content p{font-size:12px;color:var(--text-muted);line-height:1.6}
+/* Remedy */
+.remedy-item{background:var(--bg3);border-radius:8px;padding:10px 12px;border-left:3px solid var(--blue);font-size:12px;color:var(--text);line-height:1.7;margin-bottom:8px}
+/* Summary */
+.summary-box{background:var(--bg3);border-radius:8px;padding:14px;font-size:13px;color:var(--text);line-height:1.8}
+/* History */
+.hist-item{background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:background 0.2s}
+.hist-item:hover{background:var(--bg4)}
+.hist-name{font-size:13px;font-weight:600}
+.hist-meta{font-size:11px;color:var(--text-muted);margin-top:3px}
+/* Risks */
+.risk-item{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:12px;line-height:1.5}
+.risk-high{background:var(--red-bg);color:var(--red)}
+.risk-med{background:var(--amber-bg);color:var(--amber)}
+/* Upload */
+.upload-box{background:var(--bg3);border:1px dashed var(--border);border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:all 0.2s}
+.upload-box:hover{border-color:var(--gold)}
+.upload-box.done{border-color:var(--green);border-style:solid}
+.upload-icon{font-size:20px;margin-bottom:4px}
+.upload-label{font-size:12px;font-weight:600}
+.upload-hint{font-size:10px;color:var(--text-dim);margin-top:2px}
+.upload-status{font-size:10px;color:var(--text-dim);margin-top:4px}
+.upload-box.done .upload-status{color:var(--green)}
+/* Mobile */
+@media(max-width:480px){
+  .fields{grid-template-columns:1fr}
+  .field.full{grid-column:1}
+  .score-dims{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🎯</div>
+  <div class="header-info">
+    <h1>融资分析师</h1>
+    <p id="userLabel" onclick="switchUser()" style="cursor:pointer;color:var(--gold)" title="点击切换用户">👤 <span id="userName">未登录</span></p>
+  </div>
+  <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end">
+    <div class="header-badge" id="histBadge" onclick="showHistory()" style="cursor:pointer">📋 历史</div>
+    <div class="header-badge" onclick="showCaseLib()" style="cursor:pointer;background:var(--green-bg);color:var(--green);border-color:rgba(76,175,130,0.3)">📚 案例库</div>
+    <div class="header-badge" onclick="showProductMgr()" style="cursor:pointer;background:var(--blue-bg);color:var(--blue);border-color:rgba(80,144,224,0.3)">🗂️ 产品库</div>
+    <div class="header-badge" onclick="showContactSetting()" style="cursor:pointer;background:var(--gold-dim);color:var(--gold);border-color:rgba(201,168,76,0.3)">📞 联系方式</div>
+  </div>
+</div>
+
+<!-- 用户登录模态框 -->
+<div id="loginModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px;width:90%;max-width:360px">
+    <h2 style="font-size:16px;color:var(--gold);margin-bottom:16px;text-align:center">融资分析师 · 登录</h2>
+    <div class="field" style="margin-bottom:12px">
+      <label>姓名/工号</label>
+      <input type="text" id="loginName" placeholder="输入您的姓名或工号" style="font-size:14px">
+    </div>
+    <div id="savedUsers" style="margin-bottom:12px"></div>
+    <button class="btn-primary" onclick="doLogin()" style="padding:12px">进入系统</button>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loadingText">AI分析中，请稍候...</div>
+</div>
+
+<div class="main">
+  <!-- 表单 -->
+  <div id="formArea">
+    <!-- 基本信息 -->
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>客户基本信息</h2></div>
+      <div class="fields">
+        <div class="field full">
+          <label>企业名称 <span class="req">*</span></label>
+          <input type="text" id="f_name" placeholder="输入企业全称">
+        </div>
+        <div class="field">
+          <label>企业类型 <span class="req">*</span></label>
+          <select id="f_biz_type" onchange="onBizTypeChange(this.value)">
+            <option value="">请选择</option>
+            <option value="有限公司">有限公司</option>
+            <option value="个体工商户">个体工商户</option>
+            <option value="个人独资企业">个人独资企业</option>
+            <option value="合伙企业">合伙企业</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>所属行业 <span class="req">*</span></label>
+          <input type="text" id="f_industry" placeholder="如：餐饮、建材、制造">
+        </div>
+        <div class="field">
+          <label>所在地区</label>
+          <input type="text" id="f_region" placeholder="如：重庆渝北、江北">
+        </div>
+        <div class="field">
+          <label>成立年限（年）</label>
+          <input type="number" id="f_years" placeholder="0" min="0" step="0.5">
+        </div>
+        <div class="field">
+          <label>特殊资质</label>
+          <input type="text" id="f_special" placeholder="如：专精特新、高新技术">
+        </div>
+      </div>
+    </div>
+
+    <!-- 财务数据 -->
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>财务数据</h2></div>
+      <div class="fields">
+        <!-- 公司专属字段 -->
+        <div class="field" id="field_invoice">
+          <label>年开票额（万元）</label>
+          <input type="number" id="f_invoice" placeholder="0" min="0">
+        </div>
+        <div class="field" id="field_tax">
+          <label>年纳税额（万元）</label>
+          <input type="number" id="f_tax" placeholder="0" min="0">
+        </div>
+        <div class="field" id="field_tax_grade">
+          <label>纳税等级</label>
+          <select id="f_tax_grade">
+            <option value="">不清楚（自动推断）</option>
+            <option value="A">A级（优质纳税人）</option>
+            <option value="B">B级（良好纳税人）</option>
+            <option value="M">M级（一般纳税人）</option>
+            <option value="C">C级（需关注）</option>
+            <option value="D">D级（风险纳税人）</option>
+          </select>
+        </div>
+        <div class="field" id="field_cashflow">
+          <label>月均对公流水（万元）</label>
+          <input type="number" id="f_cashflow" placeholder="0" min="0">
+          <div class="field-hint">银行对公账户月均入账</div>
+        </div>
+        <!-- 个体户专属：收款码流水（始终显示，但个体户更突出） -->
+        <div class="field" id="field_qr_flow">
+          <label id="qr_label">月均银联收款码流水（万元）</label>
+          <input type="number" id="f_qr_flow" placeholder="0" min="0">
+          <div class="field-hint" id="qr_hint">银联POS/码牌收款，各大银行认可</div>
+        </div>
+        <div class="field" id="field_wx_flow">
+          <label>月均微信/支付宝流水（万元）</label>
+          <input type="number" id="f_wx_flow" placeholder="0" min="0">
+          <div class="field-hint">建行商户云贷/工行认可；其他银行一般不认</div>
+        </div>
+        <div class="field full">
+          <label>负债明细（可填多笔）</label>
+          <div id="debtItems" style="margin-bottom:6px">
+            <div class="debt-item" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+              <select class="di_type" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:0 0 auto">
+                <option value="银行经营贷">银行经营贷</option>
+                <option value="银行消费贷">银行消费贷</option>
+                <option value="银行房贷">银行房贷</option>
+                <option value="网商/微众贷">网商/微众贷</option>
+                <option value="网贷/消费贷">网贷/消费贷</option>
+                <option value="信用卡">信用卡</option>
+                <option value="民间借贷">民间借贷</option>
+                <option value="担保公司">担保公司</option>
+              </select>
+              <input type="text" class="di_bank" placeholder="机构名称" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:1;min-width:80px">
+              <input type="number" class="di_amount" placeholder="金额(万)" min="0" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;width:90px" oninput="calcTotalDebt()">
+              <select class="di_expire" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:0 0 auto">
+                <option value="">到期时间</option>
+                <option value="3个月内">3个月内到期</option>
+                <option value="6个月内">6个月内到期</option>
+                <option value="1年内">1年内到期</option>
+                <option value="1年以上">1年以上</option>
+                <option value="长期">长期(房贷等)</option>
+              </select>
+              <button onclick="this.closest('.debt-item').remove();calcTotalDebt()" style="color:var(--text-dim);background:none;border:none;cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
+            </div>
+          </div>
+          <button onclick="addDebtItem()" style="width:100%;padding:6px;background:var(--bg3);color:var(--text-muted);border:1px dashed var(--border);border-radius:6px;cursor:pointer;font-size:12px;margin-bottom:6px">
+            ➕ 添加一笔负债
+          </button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:12px;color:var(--text-muted)">合计负债：</span>
+            <input type="number" id="f_debt" placeholder="0" min="0" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--gold);padding:6px 8px;font-size:13px;font-weight:600;width:100px" oninput="syncDebtDisplay()">
+            <span style="font-size:12px;color:var(--text-muted)">万元（自动合计或手动填）</span>
+          </div>
+          <div id="debtWarning" style="display:none;margin-top:6px;font-size:11px;color:var(--red)"></div>
+        </div>
+        <div class="field">
+          <label>总资产估值（万元）</label>
+          <input type="number" id="f_assets" placeholder="0" min="0">
+          <div class="field-hint">房产+设备+存货等</div>
+        </div>
+        <div class="field">
+          <label>现有贷款机构数</label>
+          <input type="number" id="f_loan_orgs" placeholder="0" min="0" max="10">
+          <div class="field-hint">自动从负债明细统计</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 信用情况 -->
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>信用与资产</h2></div>
+      <div class="fields">
+        <div class="field">
+          <label>法人征信 <span class="req">*</span></label>
+          <select id="f_credit">
+            <option value="">请选择</option>
+            <option value="良好，无逾期">良好，无逾期</option>
+            <option value="有一笔逾期已结清">有一笔逾期已结清</option>
+            <option value="当前有逾期未结清">当前有逾期未结清</option>
+            <option value="有连三累六记录">有连三累六记录</option>
+            <option value="多笔逾期">多笔逾期</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>近3月查询次数</label>
+          <input type="number" id="f_query3" placeholder="0" min="0" max="20">
+        </div>
+        <div class="field">
+          <label>近2年逾期总次数</label>
+          <input type="number" id="f_overdue_count" placeholder="0" min="0" max="50">
+          <div class="field-hint">不含当前逾期，历史已结清的次数</div>
+        </div>
+        <div class="field">
+          <label>信用卡使用率（%）</label>
+          <input type="number" id="f_card_usage" placeholder="0" min="0" max="100">
+          <div class="field-hint">信用卡已用额度/总额度</div>
+        </div>
+        <div class="field">
+          <label>当前贷款笔数</label>
+          <input type="number" id="f_loan_count" placeholder="0" min="0" max="20">
+        </div>
+        <div class="field">
+          <label>负债类型</label>
+          <select id="f_debt_type">
+            <option value="经营贷为主">经营贷为主</option>
+            <option value="房贷为主">房贷为主</option>
+            <option value="信用贷为主">信用贷/消费贷为主</option>
+            <option value="混合">混合型</option>
+            <option value="无负债">无负债</option>
+          </select>
+          <div class="field-hint">房贷银行接受度更高</div>
+        </div>
+        <div class="field">
+          <label>抵押情况</label>
+          <select id="f_mortgage">
+            <option value="无抵押物">无抵押物</option>
+            <option value="有房产可抵押">有房产可抵押</option>
+            <option value="有房产但已有贷款">有房产但已有贷款（二抵）</option>
+            <option value="有商铺可抵押">有商铺可抵押</option>
+            <option value="有厂房可抵押">有厂房可抵押</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>担保资源</label>
+          <select id="f_guarantor">
+            <option value="无">无</option>
+            <option value="有资质良好担保人">有资质良好担保人</option>
+            <option value="担保公司担保">担保公司担保</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>涉诉情况</label>
+          <select id="f_lawsuit">
+            <option value="无">无</option>
+            <option value="有诉讼但已结案">有诉讼但已结案</option>
+            <option value="有未结诉讼">有未结诉讼</option>
+            <option value="有被执行记录">有被执行记录</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>是否有对公账户</label>
+          <select id="f_corp_account">
+            <option value="有，且流水活跃">有，且流水活跃</option>
+            <option value="有，但流水较少">有，但流水较少</option>
+            <option value="无对公账户">无对公账户</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 流水质量 -->
+    <div class="card" id="flowQualityCard">
+      <div class="card-title"><div class="dot"></div><h2>流水质量</h2></div>
+      <div class="fields">
+        <div class="field" id="field_qr_months">
+          <label>收款码使用月数</label>
+          <select id="f_qr_months">
+            <option value="">不清楚</option>
+            <option value="3个月以下">3个月以下</option>
+            <option value="3-6个月">3-6个月</option>
+            <option value="6-12个月">6-12个月</option>
+            <option value="1年以上">1年以上</option>
+            <option value="2年以上">2年以上</option>
+          </select>
+          <div class="field-hint">银行一般要求连续使用≥6个月</div>
+        </div>
+        <div class="field">
+          <label>流水连续性</label>
+          <select id="f_flow_stability">
+            <option value="每月稳定">每月稳定，无断月</option>
+            <option value="偶有断月">偶有断月（1-2个月）</option>
+            <option value="经常断月">经常断月（3个月以上）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>流水趋势</label>
+          <select id="f_flow_trend">
+            <option value="稳定">近6个月稳定</option>
+            <option value="增长">明显增长</option>
+            <option value="下降">有所下降</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>流水主要来源</label>
+          <select id="f_flow_source">
+            <option value="经营收款">正常经营收款</option>
+            <option value="大额对转">大额对转为主</option>
+            <option value="混合">经营+对转混合</option>
+          </select>
+          <div class="field-hint">大额对转银行会质疑真实性</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 银行关系 -->
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>银行关系</h2></div>
+      <div class="fields">
+        <div class="field full">
+          <label>目标银行（优先申请）</label>
+          <select id="f_target_bank">
+            <option value="">未定，系统推荐</option>
+            <option value="建设银行">建设银行</option>
+            <option value="农业银行">农业银行</option>
+            <option value="工商银行">工商银行</option>
+            <option value="中国银行">中国银行</option>
+            <option value="交通银行">交通银行</option>
+            <option value="重庆农商行">重庆农商行</option>
+            <option value="重庆银行">重庆银行</option>
+            <option value="三峡银行">三峡银行</option>
+            <option value="邮储银行">邮储银行</option>
+            <option value="招商银行">招商银行</option>
+            <option value="平安银行">平安银行</option>
+            <option value="兴业银行">兴业银行</option>
+            <option value="中信银行">中信银行</option>
+            <option value="浦发银行">浦发银行</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>在目标银行存款/理财（万元）</label>
+          <input type="number" id="f_aum" placeholder="0" min="0">
+          <div class="field-hint">AUM越高，银行优先授信</div>
+        </div>
+        <div class="field">
+          <label>是否是该行存量贷款客户</label>
+          <select id="f_existing_client">
+            <option value="否">否，新客户</option>
+            <option value="是，还款良好">是，还款良好</option>
+            <option value="是，有逾期记录">是，有逾期记录</option>
+          </select>
+          <div class="field-hint">存量客户续贷通过率高30%</div>
+        </div>
+        <div class="field">
+          <label>在目标银行开户年限</label>
+          <select id="f_bank_years">
+            <option value="">未开户/不清楚</option>
+            <option value="1年以下">1年以下</option>
+            <option value="1-3年">1-3年</option>
+            <option value="3年以上">3年以上</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 融资需求 -->
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>融资需求</h2></div>
+      <div class="fields">
+        <div class="field">
+          <label>融资金额（万元）<span class="req">*</span></label>
+          <input type="number" id="f_need" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>资金用途</label>
+          <input type="text" id="f_purpose" placeholder="如：补充流动资金、购买设备">
+        </div>
+        <div class="field full">
+          <label>备注说明</label>
+          <textarea id="f_remark" rows="2" placeholder="其他补充信息..." style="resize:none"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 文件上传（可选） -->
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>资料上传（可选）</h2></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Claude API解析PDF/图片，提取关键数据辅助分析</div>
+      <div class="field" style="margin-bottom:12px">
+        <label>Claude API Key（文件解析用）</label>
+        <input type="password" id="claude_key" placeholder="sk-ant-api..." style="font-family:monospace;font-size:12px" oninput="localStorage.setItem('fa_ck',this.value)">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="upload-box" id="ub_credit" onclick="document.getElementById('fi_credit').click()">
+          <div class="upload-icon">📄</div>
+          <div class="upload-label">征信报告</div>
+          <div class="upload-status" id="us_credit">未上传</div>
+          <input type="file" id="fi_credit" accept="image/*,application/pdf" style="display:none" onchange="handleFile(this,'credit')">
+        </div>
+        <div class="upload-box" id="ub_finance" onclick="document.getElementById('fi_finance').click()">
+          <div class="upload-icon">📊</div>
+          <div class="upload-label">财务报表</div>
+          <div class="upload-status" id="us_finance">未上传</div>
+          <input type="file" id="fi_finance" accept="image/*,application/pdf" style="display:none" onchange="handleFile(this,'finance')">
+        </div>
+        <div class="upload-box" id="ub_tax" onclick="document.getElementById('fi_tax').click()">
+          <div class="upload-icon">🧾</div>
+          <div class="upload-label">纳税申报</div>
+          <div class="upload-status" id="us_tax">未上传</div>
+          <input type="file" id="fi_tax" accept="image/*,application/pdf" style="display:none" onchange="handleFile(this,'tax')">
+        </div>
+      </div>
+      <div id="fileStatus" style="display:none;margin-top:10px;padding:8px 12px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--gold)"></div>
+      <div id="fileResult" style="display:none;margin-top:8px;padding:10px 12px;background:var(--green-bg);border:1px solid rgba(76,175,130,0.3);border-radius:8px;font-size:12px;color:var(--green);line-height:1.7"></div>
+    </div>
+
+    <div class="error-box" id="errorBox"></div>
+    <button class="btn-primary" id="analyzeBtn" onclick="doAnalyze()">开始专业分析</button>
+  </div>
+
+  <!-- 结果区 -->
+  <div id="resultArea">
+    <!-- 顶部操作 -->
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn-secondary" onclick="nextClient()">➕ 下一个客户</button>
+      <button class="btn-secondary" onclick="backToForm()">← 修改数据</button>
+      <button class="btn-secondary" onclick="showHistory()">📋 历史记录</button>
+      <button class="btn-secondary" id="saveCaseBtn" onclick="saveCurrentAsCase()" style="color:var(--green);border-color:rgba(76,175,130,0.4)">📚 存为案例</button>
+      <button class="btn-secondary" onclick="exportReport()" style="color:var(--blue);border-color:rgba(80,144,224,0.4)">📄 导出报告</button>
+    </div>
+
+    <!-- 评分总览 -->
+    <div class="card" id="scoreCard">
+      <div class="card-title"><div class="dot"></div><h2>综合评分</h2></div>
+      <div class="score-row">
+        <div class="score-circle">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="var(--bg4)" stroke-width="6"/>
+            <circle id="scoreArc" cx="40" cy="40" r="32" fill="none" stroke="var(--gold)" stroke-width="6"
+              stroke-dasharray="0 201" stroke-linecap="round"/>
+          </svg>
+          <div class="score-num"><span id="scoreNum">—</span><small>/ 100</small></div>
+        </div>
+        <div class="score-dims" id="scoreDims"></div>
+      </div>
+      <div id="diffBadge" class="difficulty-badge" style="display:none"></div>
+      <div id="fraudWarn" style="display:none;margin-top:8px;padding:8px 12px;background:var(--red-bg);border:1px solid rgba(224,80,80,0.3);border-radius:8px;font-size:12px;color:var(--red)"></div>
+    </div>
+
+    <!-- 风险提示 -->
+    <div class="card" id="riskCard" style="display:none">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--red-bg)">⚠️</div>
+        <h3>风险识别</h3>
+        <span id="riskCount" style="margin-left:auto;font-size:11px;padding:2px 8px;background:var(--red-bg);color:var(--red);border-radius:6px"></span>
+      </div>
+      <div id="riskList"></div>
+    </div>
+
+    <!-- 企业画像 -->
+    <div class="card">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--gold-dim)">🏢</div>
+        <h3>企业画像分析</h3>
+      </div>
+      <div class="profile-text" id="profileText">分析中...</div>
+    </div>
+
+    <!-- 组合方案 -->
+    <div class="card" id="comboCard" style="display:none">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--amber-bg)">🔗</div>
+        <h3>组合融资方案</h3>
+      </div>
+      <div id="comboList"></div>
+    </div>
+
+    <!-- 渠道建议 -->
+    <div class="card" id="channelCard">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--blue-bg)">🏦</div>
+        <h3>线上/线下渠道建议</h3>
+      </div>
+      <div id="channelContent"></div>
+    </div>
+
+    <!-- 推荐方案 -->
+    <div class="card">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--gold-dim)">💡</div>
+        <h3>推荐融资方案</h3>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted)" id="prodCount"></span>
+      </div>
+      <div id="productList"></div>
+    </div>
+
+    <!-- 融资路径 -->
+    <div class="card" id="pathCard" style="display:none">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--green-bg)">🗺️</div>
+        <h3>融资路径规划</h3>
+      </div>
+      <div id="pathList"></div>
+    </div>
+
+    <!-- 相似案例参考 -->
+    <div class="card" id="caseRefCard" style="display:none">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--green-bg)">📚</div>
+        <h3>相似案例参考</h3>
+      </div>
+      <div id="caseRefList"></div>
+    </div>
+
+    <!-- 资质提升 -->
+    <div class="card" id="remedyCard" style="display:none">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--blue-bg)">🔧</div>
+        <h3>资质提升建议</h3>
+      </div>
+      <div id="remedyList"></div>
+    </div>
+
+    <!-- 顾问建议 -->
+    <div class="card">
+      <div class="section-title">
+        <div class="section-icon" style="background:var(--amber-bg)">📋</div>
+        <h3>顾问综合判断</h3>
+      </div>
+      <div class="summary-box" id="summaryText">分析中...</div>
+    </div>
+
+    <!-- 联系顾问 -->
+    <div class="card" id="contactCard" style="background:linear-gradient(135deg,#1a1400,#0d0d0d);border-color:rgba(201,168,76,0.3)">
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:20px;margin-bottom:8px">🤝</div>
+        <div style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:4px" id="contactTitle">需要专业协助办理？</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.7" id="contactDesc">
+          本分析结果仅供参考，实际申请涉及材料准备、银行沟通、额度争取等专业环节。<br>
+          如需专业助贷顾问一对一服务，欢迎联系我们。
+        </div>
+        <div id="contactInfo" style="background:var(--bg3);border-radius:12px;padding:16px;margin-bottom:12px;text-align:left">
+          <div style="font-size:13px;color:var(--text);line-height:2">
+            <div>👤 <span id="c_name" style="color:var(--gold);font-weight:600">助贷顾问</span></div>
+            <div>📱 <span id="c_phone">微信同号</span></div>
+            <div>🏢 <span id="c_company">专业助贷服务</span></div>
+            <div>📍 <span id="c_area">重庆</span></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px" id="c_desc">
+          专注重庆市场，熟悉本地银行资源，免费评估，成功收费
+        </div>
+        <button onclick="showContact()" style="width:100%;padding:12px;background:var(--gold);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">
+          📞 立即联系顾问
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 历史记录 -->
+  <div id="historyArea" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn-secondary" onclick="backToForm()">← 返回</button>
+      <button class="btn-secondary" onclick="clearHistory()" style="color:var(--red)">清空记录</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+  <!-- 联系方式设置 -->
+  <div id="contactSettingArea" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn-secondary" onclick="backToForm()">← 返回表单</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>联系方式设置</h2></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.7">
+        设置后，客户看到分析结果时会显示你的联系方式，方便他们直接找你。
+      </div>
+      <div class="fields">
+        <div class="field full">
+          <label>姓名/昵称</label>
+          <input type="text" id="cs_name" placeholder="如：张顾问、重庆助贷王总">
+        </div>
+        <div class="field">
+          <label>手机号/微信号</label>
+          <input type="text" id="cs_phone" placeholder="138xxxxxxxx">
+        </div>
+        <div class="field">
+          <label>所在机构</label>
+          <input type="text" id="cs_company" placeholder="如：XX金融服务有限公司">
+        </div>
+        <div class="field">
+          <label>服务地区</label>
+          <input type="text" id="cs_area" placeholder="如：重庆全市、渝北/江北/沙坪坝">
+        </div>
+        <div class="field full">
+          <label>服务介绍（一句话）</label>
+          <input type="text" id="cs_desc" placeholder="如：专注重庆小微企业融资，熟悉渝农商行/建行/农行资源，免费评估，成功收费">
+        </div>
+        <div class="field full">
+          <label>卡片标题</label>
+          <input type="text" id="cs_title" placeholder="如：需要专业协助办理？">
+        </div>
+      </div>
+      <button class="btn-primary" style="margin-top:12px;padding:12px" onclick="saveContact()">💾 保存联系方式</button>
+      <div id="csStatus" style="display:none;margin-top:8px;font-size:12px;padding:8px;border-radius:6px"></div>
+
+      <!-- 分发功能 -->
+      <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:8px">📤 生成客户版本</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7">
+          生成一个专属HTML文件发给客户。客户打开后可以自己填写信息分析，结果页会显示<strong style="color:var(--gold)">你的联系方式</strong>，且客户无法修改。
+        </div>
+        <div class="fields" style="margin-bottom:12px">
+          <div class="field full">
+            <label>客户姓名（可选，个性化文件名）</label>
+            <input type="text" id="cs_client_name" placeholder="如：张老板、李总（留空则通用版）">
+          </div>
+          <div class="field full">
+            <label>给客户的提示语</label>
+            <input type="text" id="cs_client_tip" placeholder="如：请按实际情况填写，填写越详细分析越准确" value="请按实际情况填写，填写越详细分析越准确">
+          </div>
+        </div>
+        <button onclick="generateClientVersion()" style="width:100%;padding:12px;background:var(--green);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">
+          📱 生成并下载客户版本
+        </button>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:8px;text-align:center">
+          生成后通过微信/邮件发给客户，客户直接用手机浏览器打开即可
+        </div>
+      </div>
+    </div>
+
+    <!-- 预览 -->
+    <div class="card" style="background:linear-gradient(135deg,#1a1400,#0d0d0d);border-color:rgba(201,168,76,0.3)">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">预览效果：</div>
+      <div style="text-align:center">
+        <div style="font-size:15px;font-weight:700;color:var(--gold);margin-bottom:8px" id="preview_title">需要专业协助办理？</div>
+        <div style="background:var(--bg3);border-radius:10px;padding:14px;text-align:left;margin-bottom:10px">
+          <div style="font-size:13px;color:var(--text);line-height:2">
+            <div>👤 <span id="preview_name" style="color:var(--gold);font-weight:600">助贷顾问</span></div>
+            <div>📱 <span id="preview_phone">微信同号</span></div>
+            <div>🏢 <span id="preview_company">专业助贷服务</span></div>
+            <div>📍 <span id="preview_area">重庆</span></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px" id="preview_desc">专注重庆市场，免费评估，成功收费</div>
+        <div style="width:100%;padding:10px;background:var(--gold);color:#000;border-radius:8px;font-size:13px;font-weight:700;text-align:center">📞 立即联系顾问</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 产品维护入口 -->
+  <div id="productMgrArea" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn-secondary" onclick="backToForm()">← 返回</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>产品库管理</h2></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.7">
+        快速录入或更新银行产品。录入后自动同步到分析引擎。
+      </div>
+      <!-- 新增产品表单 -->
+      <div style="background:var(--bg3);border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--gold)">➕ 录入新产品 / 更新产品</div>
+        <div class="fields">
+          <div class="field"><label>产品名称 *</label><input type="text" id="pm_name" placeholder="如：商户云贷"></div>
+          <div class="field"><label>所属银行 *</label><input type="text" id="pm_bank" placeholder="如：建设银行"></div>
+          <div class="field"><label>产品类型</label>
+            <select id="pm_type">
+              <option value="信用贷">信用贷</option><option value="税贷">税贷</option>
+              <option value="流水贷">流水贷</option><option value="抵押贷">抵押贷</option>
+              <option value="科技贷">科技贷</option><option value="供应链金融">供应链金融</option>
+              <option value="涉农贷">涉农贷</option><option value="政策性贷">政策性贷</option>
+              <option value="过渡贷">过渡贷</option><option value="综合贷">综合贷</option>
+            </select>
+          </div>
+          <div class="field"><label>利率范围</label><input type="text" id="pm_rate" placeholder="如：3.5%-5%"></div>
+          <div class="field"><label>额度上限（万）</label><input type="number" id="pm_maxamt" placeholder="500"></div>
+          <div class="field"><label>期限（月）</label><input type="number" id="pm_term" placeholder="12"></div>
+          <div class="field"><label>申请渠道</label>
+            <select id="pm_channel">
+              <option value="纯线上">纯线上</option><option value="线上+线下">线上+线下</option>
+              <option value="线下">线下</option>
+            </select>
+          </div>
+          <div class="field"><label>法人类别</label>
+            <select id="pm_legal">
+              <option value="有限公司+个体户">两者均可</option>
+              <option value="有限公司">仅有限公司</option>
+              <option value="个体户">仅个体户</option>
+            </select>
+          </div>
+          <div class="field full"><label>征信要求</label><input type="text" id="pm_credit" placeholder="如：征信良好，近2年无连三累六，近3月查询≤6次"></div>
+          <div class="field full"><label>核心公式</label><input type="text" id="pm_formula" placeholder="如：银联码流水×30%-负债"></div>
+          <div class="field full"><label>备注说明</label><input type="text" id="pm_remark" placeholder="产品特点、申请注意事项等"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn-primary" style="flex:1;padding:10px" onclick="saveProduct()">保存产品</button>
+          <button class="btn-secondary" onclick="clearProductForm()">清空</button>
+        </div>
+        <div id="pmStatus" style="display:none;margin-top:8px;font-size:12px;padding:8px;border-radius:6px"></div>
+      </div>
+      <!-- 产品列表 -->
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">已录入的自定义产品</div>
+      <div id="customProductList" style="font-size:12px;color:var(--text-muted)">暂无自定义产品</div>
+    </div>
+  </div>
+
+  <!-- 案例库 -->
+  <div id="caseLibArea" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn-secondary" onclick="backToForm()">← 返回</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="dot"></div><h2>成功案例库</h2></div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">
+        记录真实成功案例，AI分析时自动匹配相似案例作为参考依据。
+      </div>
+      <!-- 新增案例 -->
+      <div style="background:var(--bg3);border-radius:8px;padding:14px;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--green)">➕ 录入真实案例</div>
+        
+        <!-- 基本信息 -->
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:600">基本信息</div>
+        <div class="fields" style="margin-bottom:12px">
+          <div class="field"><label>行业</label><input type="text" id="cl_industry" placeholder="如：餐饮、建材"></div>
+          <div class="field"><label>企业类型</label>
+            <select id="cl_biztype">
+              <option value="个体工商户">个体工商户</option>
+              <option value="有限公司">有限公司</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 贷款明细（支持多笔）-->
+        <div style="font-size:11px;color:var(--amber);margin-bottom:8px;font-weight:600">贷款明细（可添加多笔）</div>
+        <div id="loanItems">
+          <!-- 第一笔 -->
+          <div class="loan-item" style="background:var(--bg4);border-radius:8px;padding:10px;margin-bottom:8px;position:relative">
+            <div style="font-size:11px;color:var(--gold);margin-bottom:6px;font-weight:600">第1笔</div>
+            <div class="fields">
+              <div class="field"><label>产品名称</label><input type="text" class="li_product" placeholder="如：农行商户e贷"></div>
+              <div class="field"><label>所属银行</label><input type="text" class="li_bank" placeholder="如：农业银行"></div>
+              <div class="field"><label>批款金额（万）</label><input type="number" class="li_amount" placeholder="0" min="0"></div>
+              <div class="field"><label>实际利率（%）</label><input type="number" class="li_rate" placeholder="0" step="0.1" min="0"></div>
+              <div class="field"><label>审批周期</label>
+                <select class="li_days">
+                  <option value="当天">当天放款</option>
+                  <option value="1-3天">1-3天</option>
+                  <option value="1周">约1周</option>
+                  <option value="2-4周">2-4周</option>
+                  <option value="1个月以上">1个月以上</option>
+                </select>
+              </div>
+              <div class="field"><label>申请渠道</label>
+                <select class="li_channel">
+                  <option value="纯线上通过">纯线上通过</option>
+                  <option value="线上拒绝转线下通过">线上拒绝→线下通过</option>
+                  <option value="直接线下">直接线下</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button onclick="addLoanItem()" style="width:100%;padding:8px;background:var(--bg4);color:var(--text-muted);border:1px dashed var(--border);border-radius:8px;cursor:pointer;font-size:12px;margin-bottom:12px">
+          ➕ 添加第二笔贷款
+        </button>
+        <div class="fields" style="margin-bottom:12px">
+          <div class="field"><label>系统预测总额度（万）</label><input type="number" id="cl_pred_amount" placeholder="系统预测的额度"></div>
+          <div class="field"><label>实际获批总额度（万）</label><input type="number" id="cl_amount" placeholder="所有贷款合计" readonly style="background:var(--bg4);color:var(--gold)"></div>
+        </div>
+
+        <!-- 客户真实情况 -->
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:600">客户真实情况（脱敏填写）</div>
+        <div class="fields" style="margin-bottom:12px">
+          <div class="field full"><label>财务情况</label>
+            <input type="text" id="cl_finance" placeholder="如：年纳税5万，月均银联码流水40万，无对公流水"></div>
+          <div class="field full"><label>负债情况</label>
+            <input type="text" id="cl_debt" placeholder="如：现有负债280万（建行150万+农行130万），总资产500万"></div>
+          <div class="field full"><label>征信情况</label>
+            <input type="text" id="cl_credit" placeholder="如：征信良好，近3月查询4次，有一笔已结清逾期"></div>
+        </div>
+
+        <!-- 申请过程（最重要）-->
+        <div style="font-size:11px;color:var(--amber);margin-bottom:8px;font-weight:600">⭐ 申请过程（最有价值的部分）</div>
+        <div class="fields" style="margin-bottom:12px">
+          <div class="field">
+            <label>整体是否有特殊情况</label>
+            <select id="cl_special_type">
+              <option value="无特殊情况">无特殊情况，正常通过</option>
+              <option value="负债超标但通过">负债超标但通过</option>
+              <option value="税负偏低但通过">税负偏低但通过</option>
+              <option value="征信有瑕疵但通过">征信有瑕疵但通过</option>
+              <option value="多头借贷但通过">多头借贷但通过</option>
+              <option value="额度缩水">额度缩水（比预期少）</option>
+              <option value="需要担保增信">需要担保人/增信才通过</option>
+              <option value="其他例外">其他例外情况</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>如何解决障碍（关键经验）</label>
+            <textarea id="cl_obstacle" rows="3" placeholder="详细描述：1.遇到什么问题  2.如何沟通/解决  3.提供了什么额外材料&#10;例：线上系统因查询次数多被拒，转线下后客户经理介入，重点展示了连续18个月稳定的银联码流水记录，同时承诺在银行开户并沉淀存款，最终批了200万。" style="resize:vertical;font-size:13px"></textarea>
+          </div>
+          <div class="field full">
+            <label>成功关键因素（给同行的提示）</label>
+            <textarea id="cl_key" rows="2" placeholder="例：1.银联码流水必须连续6个月以上  2.提前在目标银行开户沉淀3个月  3.准备好经营合同证明流水真实性" style="resize:vertical;font-size:13px"></textarea>
+          </div>
+          <div class="field full">
+            <label>客户经理话术（说了什么让银行点头）</label>
+            <textarea id="cl_script" rows="2" placeholder="例：重点强调客户虽然税负低，但银联码流水真实稳定，月均40万连续2年，年化流水接近500万，实际经营能力超过账面数据。" style="resize:vertical;font-size:13px"></textarea>
+          </div>
+        </div>
+
+        <!-- 材料清单 -->
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-weight:600">材料清单</div>
+        <div class="field full" style="margin-bottom:12px">
+          <input type="text" id="cl_materials" placeholder="列出实际用到的材料，如：营业执照+身份证+6个月银联码流水+征信报告+经营场所照片">
+        </div>
+
+        <button class="btn-primary" style="padding:10px" onclick="saveCase()">💾 保存案例</button>
+        <div id="clStatus" style="display:none;margin-top:8px;font-size:12px;padding:8px;border-radius:6px"></div>
+      </div>
+      <!-- 案例列表 -->
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">已录入案例（<span id="caseCount">0</span>个）</div>
+      <div id="caseList"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WORKER_URL = 'https://financing-analyst.jhh895822.workers.dev';
+const IS_CLIENT_VERSION = false; // 客户版本生成时自动改为true
+const CLIENT_TIP = '';           // 客户提示语
+const uploadedFiles = { credit:null, finance:null, tax:null };
+const fileLabels = { credit:'征信报告', finance:'财务报表', tax:'纳税申报表' };
+
+// ── 文件上传 ──
+function handleFile(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    uploadedFiles[type] = { name:file.name, data:e.target.result.split(',')[1], mime:file.type||'image/jpeg' };
+    document.getElementById('ub_'+type).classList.add('done');
+    document.getElementById('us_'+type).textContent = '✓ ' + file.name.substring(0,12);
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Claude文件解析 ──
+async function parseFiles(claudeKey) {
+  const files = Object.entries(uploadedFiles).filter(([k,v])=>v!==null);
+  if (!files.length) return null;
+  const statusEl = document.getElementById('fileStatus');
+  statusEl.style.display='block';
+  statusEl.textContent='🔍 Claude正在识别文件...';
+  const blocks = [];
+  for (const [k,v] of files) {
+    if (v.mime==='application/pdf') {
+      blocks.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:v.data}});
+    } else {
+      blocks.push({type:'image',source:{type:'base64',media_type:v.mime,data:v.data}});
+    }
+  }
+  blocks.push({type:'text',text:'识别以上'+files.map(([k])=>fileLabels[k]).join('、')+'，只返回JSON：{"credit_summary":"征信关键信息","finance_summary":"财务关键数据","tax_summary":"纳税关键数据","key_findings":"3条重要发现","red_flags":"风险点，无则填无"}'});
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:blocks}]})
+    });
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message);
+    const raw = json.content?.[0]?.text||'{}';
+    const m = raw.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(m?m[0]:raw);
+    statusEl.style.display='none';
+    const resultEl = document.getElementById('fileResult');
+    resultEl.style.display='block';
+    resultEl.innerHTML='✅ 文件解析完成<br>'+
+      (parsed.key_findings?'📌 '+parsed.key_findings+'<br>':'')+
+      (parsed.red_flags&&parsed.red_flags!=='无'?'⚠️ '+parsed.red_flags:'');
+    return parsed;
+  } catch(e) {
+    statusEl.textContent='⚠️ 文件解析失败：'+e.message;
+    return null;
+  }
+}
+
+// ── 主分析函数 ──
+async function doAnalyze() {
+  const d = {
+    企业名称:   v('f_name'),
+    企业类型:   v('f_biz_type'),
+    行业:       v('f_industry'),
+    地区:       v('f_region')||'重庆',
+    成立年限:   v('f_years')||'0',
+    特殊资质:   v('f_special'),
+    年开票额万: v('f_invoice')||'0',
+    年纳税额万: v('f_tax')||'0',
+    纳税等级:   v('f_tax_grade'),
+    月均对公流水万: v('f_cashflow')||'0',
+    月均银联收款码流水万: v('f_qr_flow')||'0',
+    月均微信支付宝流水万: v('f_wx_flow')||'0',
+    企业负债万: v('f_debt')||'0',
+    负债明细:   getDebtDetail(),
+    网贷情况:   (window._debtItems||[]).filter(d=>d.type.includes('网贷')||d.type.includes('网商')||d.type.includes('消费贷')).length > 0 ? '有网贷' : '无网贷',
+    即将到期:   (window._debtItems||[]).filter(d=>d.expire==='3个月内'||d.expire==='6个月内').map(d=>d.bank+'('+d.amount+'万)').join(',') || '无',
+    总资产万:   v('f_assets')||'0',
+    现有贷款机构数: v('f_loan_orgs')||'0',
+    法人征信:   v('f_credit'),
+    近3月查询次数: v('f_query3')||'0',
+    抵押情况:   v('f_mortgage'),
+    担保资源:   v('f_guarantor'),
+    涉诉情况:   v('f_lawsuit'),
+    对公账户状态: v('f_corp_account'),
+    需求金额万: v('f_need'),
+    用途:       v('f_purpose'),
+    备注:       v('f_remark'),
+    近2年逾期次数: v('f_overdue_count')||'0',
+    信用卡使用率: v('f_card_usage')||'0',
+    当前贷款笔数: v('f_loan_count')||'0',
+    负债类型:    v('f_debt_type'),
+    收款码使用月数: v('f_qr_months'),
+    流水连续性:  v('f_flow_stability'),
+    流水趋势:    v('f_flow_trend'),
+    流水主要来源: v('f_flow_source'),
+    目标银行:    v('f_target_bank'),
+    行内AUM万:   v('f_aum')||'0',
+    存量客户:    v('f_existing_client'),
+    开户年限:    v('f_bank_years'),
+  };
+
+  if (!d['企业类型']) return showError('请选择企业类型');
+  if (!d['行业']) return showError('请填写所属行业');
+  if (!d['法人征信']) return showError('请选择法人征信情况');
+  if (!d['需求金额万']||parseFloat(d['需求金额万'])<=0) return showError('请填写融资需求金额');
+
+  showError('');
+  // 保存当前表单数据
+  window._currentFormData = d;
+  setLoading(true, '正在调用AI分析...');
+
+  // 文件解析
+  const ck = localStorage.getItem('fa_ck')||'';
+  const hasFiles = Object.values(uploadedFiles).some(v=>v!==null);
+  let fileData = null;
+  if (hasFiles && ck) {
+    setLoading(true, '正在解析上传文件...');
+    fileData = await parseFiles(ck);
+  }
+
+  if (fileData) {
+    const parts = [];
+    if (fileData.credit_summary) parts.push('【征信】'+fileData.credit_summary);
+    if (fileData.finance_summary) parts.push('【财务】'+fileData.finance_summary);
+    if (fileData.tax_summary) parts.push('【纳税】'+fileData.tax_summary);
+    if (fileData.red_flags&&fileData.red_flags!=='无') parts.push('【风险】'+fileData.red_flags);
+    if (parts.length) d['备注'] = [d['备注'], parts.join(' ')].filter(Boolean).join(' | ');
+  }
+
+  // 匹配相似案例
+  const similarCases = findSimilarCases(d);
+  if(similarCases.length) {
+    d['相似案例'] = similarCases.map(c=>
+      `${c['行业']}${c['企业类型']}→${c['产品']}${c['金额']}万@${c['利率']}%|${c['成功关键']}`
+    ).join('；');
+  }
+
+  // 加入自定义产品库
+  const customProds = JSON.parse(localStorage.getItem('fa_custom_products')||'[]');
+  if(customProds.length) {
+    d['自定义产品'] = JSON.stringify(customProds);
+  }
+
+  setLoading(true, 'AI深度分析中...');
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(d)
+    });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const result = await res.json();
+    setLoading(false);
+    renderResult(d, result);
+    saveHistory(d, result);
+  } catch(e) {
+    setLoading(false);
+    showError('分析失败：'+e.message+'，请检查网络后重试');
+  }
+}
+
+// ── 渲染结果 ──
+function renderResult(d, r) {
+  document.getElementById('formArea').style.display='none';
+  document.getElementById('historyArea').style.display='none';
+  document.getElementById('resultArea').style.display='block';
+  window.scrollTo(0,0);
+
+  const scores = r.scores||{};
+  const avgRisk = r.avgRisk||0;
+  const ai = r;
+
+  // 评分圆环
+  const scoreColor = avgRisk>=70?'#4CAF82':avgRisk>=50?'#C9A84C':'#E05050';
+  const circ = 2*Math.PI*32;
+  document.getElementById('scoreArc').setAttribute('stroke-dasharray',`${(avgRisk/100)*circ} ${circ}`);
+  document.getElementById('scoreArc').setAttribute('stroke',scoreColor);
+  document.getElementById('scoreNum').textContent=avgRisk;
+  document.getElementById('scoreNum').style.color=scoreColor;
+
+  // 评分维度
+  const dims=[
+    {k:'credit',n:'信用',c:'#E05050'},{k:'debt',n:'负债',c:'#E0A040'},
+    {k:'flow',n:'流水',c:'#5090E0'},{k:'tax',n:'纳税',c:'#C9A84C'},
+    {k:'asset',n:'资产',c:'#4CAF82'},{k:'biz',n:'经营',c:'#9C6FD6'}
+  ];
+  document.getElementById('scoreDims').innerHTML=dims.map(d=>{
+    const val=scores[d.k]||0;
+    return `<div class="dim-item">
+      <div class="dim-label" style="display:flex;justify-content:space-between">
+        <span>${d.n}</span><span style="color:${d.c};font-weight:600">${val}</span>
+      </div>
+      <div class="dim-bar"><div class="dim-fill" style="width:${val}%;background:${d.c}"></div></div>
+    </div>`;
+  }).join('');
+
+  // 融资难度
+  const diff = ai.difficulty||'';
+  if (diff) {
+    const colors={'容易':'#4CAF82','一般':'#C9A84C','较难':'#E0A040','困难':'#E05050'};
+    const c=colors[diff]||'#888';
+    const el=document.getElementById('diffBadge');
+    el.style.display='inline-flex';
+    el.style.cssText+=`;background:${c}22;color:${c};border:1px solid ${c}44;`;
+    el.innerHTML=`<span>${diff}</span>${ai.difficulty_reason?'<span style="font-weight:400;margin-left:4px;font-size:11px">'+ai.difficulty_reason+'</span>':''}`;
+  }
+
+  // 反欺诈
+  const fraud=r.fraud||{};
+  if (fraud.riskScore>30) {
+    const el=document.getElementById('fraudWarn');
+    el.style.display='block';
+    el.textContent='⚠️ 反欺诈风险：'+fraud.reasons;
+  }
+
+  // 风险提示（前端计算）
+  const risks=calcRisks(d);
+  if (risks.length) {
+    document.getElementById('riskCard').style.display='block';
+    document.getElementById('riskCount').textContent=risks.filter(r=>r.level==='high').length+'项高风险';
+    document.getElementById('riskList').innerHTML=risks.map(r=>
+      `<div class="risk-item risk-${r.level}">
+        <span>${r.level==='high'?'🔴':'🟡'}</span>
+        <span>${r.text}</span>
+      </div>`
+    ).join('');
+  }
+
+  // 组合方案展示
+  const combos = r.combinations||[];
+  const comboCard = document.getElementById('comboCard');
+  const comboList = document.getElementById('comboList');
+  if(comboList && combos.length) {
+    comboCard.style.display='block';
+    comboList.innerHTML = combos.map(c=>`
+      <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid var(--amber)">
+        <div style="font-weight:600;font-size:13px;margin-bottom:4px">💡 ${c.title}</div>
+        <div style="font-size:13px;color:var(--amber);margin-bottom:4px">${c.desc}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${c.note}</div>
+      </div>`
+    ).join('');
+  } else if(comboCard) {
+    comboCard.style.display='none';
+  }
+
+  // 记录当前分析结果，供"存为案例"使用
+  window._lastAnalysis = { d: window._currentFormData||{}, result: r, ai };
+
+  // 企业画像
+  document.getElementById('profileText').textContent=ai.profile||'分析中...';
+
+  // 渠道建议
+  const channelEl=document.getElementById('channelContent');
+  if (r.channelAdvice||ai.channel_advice) {
+    const text=ai.channel_advice||r.channelAdvice;
+    channelEl.innerHTML=`<div class="channel-advice">${text}</div>`;
+  }
+
+  // 产品列表
+  const prods = r.topProducts||[];
+  document.getElementById('prodCount').textContent=`共${prods.length}个匹配产品`;
+  const aiProds = ai.products||[];
+  document.getElementById('productList').innerHTML=prods.map((p,i)=>{
+    const ap=aiProds[i]||{};
+    const probClass=p.passProb>=70?'prob-high':p.passProb>=50?'prob-mid':'prob-low';
+    
+    // 差距分析和提升建议
+    const gaps=calcProductGaps(d,p);
+    const gapHtml=gaps.length?`
+      <div class="gap-section">
+        <div class="gap-title">📈 提升方向</div>
+        ${gaps.map(g=>`<div class="gap-item"><span class="gap-icon">${g.icon}</span><span>${g.text}</span></div>`).join('')}
+      </div>`:'';
+
+    return `<div class="product-card${i===0?' top1':''}">
+      <div class="prod-header">
+        <div class="prod-rank">${i+1}</div>
+        <div>
+          <div class="prod-name">${p.name}</div>
+          <div class="prod-bank">${p.bank}</div>
+        </div>
+        <div class="${probClass} prob-badge">通过率${p.passProb}%</div>
+      </div>
+      <div class="debt-calc">
+        理论额度 <span>${p.theoretical||p.estAmt}万</span> 
+        - 现有负债 <span>${d['企业负债万']||0}万</span> 
+        = 可贷 <span>${p.estAmt}万</span>
+      </div>
+      <div class="prod-amounts">
+        <div class="amount-tag main">预计可贷 ${p.estAmt}万</div>
+        <div class="amount-tag">利率 ${p.rateLower}%-${p.rateUpper}%</div>
+        <div class="amount-tag">期限 ${p.term}月</div>
+        <div class="amount-tag">${p.channel}</div>
+      </div>
+      ${ap.why?`<div style="font-size:12px;color:var(--text-muted);line-height:1.7;margin-bottom:8px">📌 ${ap.why}</div>`:''}
+      ${ap.key_risk?`<div style="font-size:12px;color:var(--amber);background:var(--amber-bg);border-radius:6px;padding:6px 10px;margin-bottom:8px">⚠️ ${ap.key_risk}</div>`:''}
+      ${ap.negotiation_tip?`<div style="font-size:12px;color:var(--blue);background:var(--blue-bg);border-radius:6px;padding:6px 10px;margin-bottom:8px">💬 ${ap.negotiation_tip}</div>`:''}
+      ${gapHtml}
+    </div>`;
+  }).join('');
+
+  // 融资路径
+  const path=ai.path||[];
+  if (path.length) {
+    document.getElementById('pathCard').style.display='block';
+    document.getElementById('pathList').innerHTML=path.map((p,i)=>
+      `<div class="path-item">
+        <div class="path-num">${i+1}</div>
+        <div class="path-content">
+          <h4>${p.title}</h4>
+          <p>${p.desc}</p>
+        </div>
+      </div>`
+    ).join('');
+  }
+
+  // 相似案例展示
+  const similarCasesData = JSON.parse(localStorage.getItem('fa_cases')||'[]');
+  const caseRefCard = document.getElementById('caseRefCard');
+  const caseRefList = document.getElementById('caseRefList');
+  if(caseRefList && similarCasesData.length) {
+    const ind = d ? (d['行业']||'') : '';
+    const biz = d ? (d['企业类型']||'') : '';
+    const similar = similarCasesData.filter(c=>
+      c['行业'].includes(ind)||ind.includes(c['行业'])||c['企业类型']===biz
+    ).slice(0,3);
+    if(similar.length) {
+      caseRefCard.style.display='block';
+      caseRefList.innerHTML = similar.map(c=>`
+        <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">📌 ${c['行业']}·${c['企业类型']} → 成功贷款${c['金额']}万</div>
+          <div style="font-size:12px;color:var(--gold);margin-bottom:4px">${c['产品']} | 利率${c['利率']}% | ${c['审批周期']}</div>
+          ${c['客户情况']?`<div style="font-size:12px;color:var(--text-muted)">${c['客户情况']}</div>`:''}
+          ${c['成功关键']?`<div style="font-size:12px;color:var(--green);margin-top:3px">✅ ${c['成功关键']}</div>`:''}
+        </div>`
+      ).join('');
+    } else {
+      caseRefCard.style.display='none';
+    }
+  } else if(caseRefCard) {
+    caseRefCard.style.display='none';
+  }
+
+  // 资质提升（有实质建议才显示）
+  const remedy=r.remedy||ai.remedy_advice||'';
+  const remedyCard=document.getElementById('remedyCard');
+  if (remedy && !remedy.includes('综合资质良好，直接按推荐产品申请')) {
+    remedyCard.style.display='block';
+    const lines=remedy.split('\n').filter(l=>l.trim());
+    document.getElementById('remedyList').innerHTML=lines.map(l=>
+      `<div class="remedy-item">${l.replace(/^[•·\-\s]+/,'')}</div>`
+    ).join('');
+  } else {
+    remedyCard.style.display='none';
+  }
+
+  // 顾问建议
+  document.getElementById('summaryText').textContent=ai.advice||'';
+}
+
+// ── 差距分析（每个产品的提升建议）──
+function calcProductGaps(d, p) {
+  const gaps = [];
+  const debt   = parseFloat(d['企业负债万'])||0;
+  const tax    = parseFloat(d['年纳税额万'])||0;
+  const inv    = parseFloat(d['年开票额万'])||0;
+  const cf     = parseFloat(d['月均对公流水万'])||0;
+  const qr     = parseFloat(d['月均银联收款码流水万'])||0;
+  const need   = parseFloat(d['需求金额万'])||0;
+  const theo   = p.theoretical||p.estAmt;
+  const avail  = p.estAmt;
+
+  // 负债偏高
+  if (debt > 0 && avail < need) {
+    const gap = need - avail;
+    const debtReduce = Math.ceil(gap);
+    gaps.push({
+      icon:'💰',
+      text:`负债偏高，若结清${debtReduce}万负债，可贷额度可提升至${avail+debtReduce}万，满足融资需求`
+    });
+  }
+
+  // 流水不足（流水贷产品）
+  const type = p.type||'';
+  if ((type==='流水贷'||p.isQR) && avail < need) {
+    if (p.isQR) {
+      const needQR = Math.ceil((need+debt)/12/0.35);
+      if (qr < needQR) gaps.push({
+        icon:'📱',
+        text:`月均银联码流水需达到${needQR}万（当前${qr}万），可满额贷${need}万。建议将部分现金收款转为银联码收款`
+      });
+    } else {
+      const needCF = Math.ceil((need+debt)/4);
+      if (cf < needCF) gaps.push({
+        icon:'🏦',
+        text:`月均对公流水需达到${needCF}万（当前${cf}万），可满额贷${need}万。建议集中走对公账户收款`
+      });
+    }
+  }
+
+  // 纳税不足（税贷产品）
+  if (type==='税贷' && avail < need) {
+    const needTax = Math.ceil((need+debt)/8);
+    if (tax < needTax) gaps.push({
+      icon:'🧾',
+      text:`年纳税需达到${needTax}万（当前${tax}万），税贷额度可提升至${need}万。建议连续足额申报纳税`
+    });
+  }
+
+  // 开票不足（发票贷产品）
+  if (type==='发票贷' && avail < need) {
+    const needInv = Math.ceil((need+debt)/0.05);
+    if (inv < needInv) gaps.push({
+      icon:'📋',
+      text:`年开票需达到${needInv}万（当前${inv}万），发票贷额度可提升至${need}万。建议增加开票金额`
+    });
+  }
+
+  return gaps.slice(0,2); // 最多2条
+}
+
+// ── 前端风险计算 ──
+function calcRisks(d) {
+  const risks = [];
+  const inv  = parseFloat(d['年开票额万'])||0;
+  const tax  = parseFloat(d['年纳税额万'])||0;
+  const debt = parseFloat(d['企业负债万'])||0;
+  const assets=parseFloat(d['总资产万'])||0;
+  const need = parseFloat(d['需求金额万'])||0;
+  const q3   = parseFloat(d['近3月查询次数'])||0;
+  const credit=d['法人征信']||'';
+
+  const taxRate = inv>0 ? tax/inv*100 : 0;
+  if (inv>0 && tax===0) risks.push({level:'high',text:`有开票记录但纳税为零，税务数据异常，银行核查必拒`});
+  else if (taxRate<0.5 && tax>0) risks.push({level:'high',text:`税负率${taxRate.toFixed(2)}%严重偏低，线上税贷/发票贷系统直接拒绝`});
+
+  if (assets>0 && debt/assets>0.8) risks.push({level:'high',text:`资产负债率${(debt/assets*100).toFixed(0)}%严重超标，多数银行一票否决`});
+  else if (assets>0 && debt/assets>0.6) risks.push({level:'med',text:`资产负债率${(debt/assets*100).toFixed(0)}%偏高，部分银行谨慎放贷`});
+
+  if (credit.includes('当前')) risks.push({level:'high',text:`法人当前有逾期未结清，所有银行产品无法通过`});
+  else if (credit.includes('连三')) risks.push({level:'high',text:`有连三累六记录，严重影响银行准入`});
+
+  if (q3>=5) risks.push({level:'high',text:`近3月征信查询${q3}次，银行判定多头借贷，系统拒绝`});
+  else if (q3>=4) risks.push({level:'med',text:`近3月征信查询${q3}次偏多，银行可能判定资金紧张`});
+
+  if (d['抵押情况']==='无抵押物') risks.push({level:'med',text:`无抵押物，纯信用类产品额度有限，需税务/流水支撑`});
+  if (need>0 && inv>0 && need/inv>5) risks.push({level:'med',text:`融资需求${need}万占年开票${(need/inv*100).toFixed(0)}%，偿债压力测算需重点说明`});
+  if (d['涉诉情况']&&d['涉诉情况']!=='无') risks.push({level:'high',text:`有${d['涉诉情况']}，影响银行准入，建议先处理司法问题`});
+
+  return risks;
+}
+
+// ── 工具函数 ──
+function v(id) { const el=document.getElementById(id); return el?el.value.trim():''; }
+function showError(msg) { const el=document.getElementById('errorBox'); el.textContent=msg; el.style.display=msg?'block':'none'; }
+function setLoading(show,text='AI分析中...') {
+  const ov=document.getElementById('loadingOverlay');
+  ov.classList.toggle('show',show);
+  if(text) document.getElementById('loadingText').textContent=text;
+}
+function backToForm() {
+  ['formArea','resultArea','historyArea','productMgrArea','caseLibArea','contactSettingArea'].forEach(id=>{
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('formArea').style.display='block';
+  window.scrollTo(0,0);
+}
+
+// ── 历史记录 ──
+function saveHistory(d, result) {
+  const h = JSON.parse(localStorage.getItem('fa_history')||'[]');
+  h.unshift({ id:Date.now(), name:d['企业名称']||'未命名', time:new Date().toLocaleString(), d, result });
+  if (h.length>20) h.pop();
+  localStorage.setItem(userKey('fa_history'), JSON.stringify(h));
+  updateHistBadge();
+}
+function updateHistBadge() {
+  const h = JSON.parse(localStorage.getItem(userKey('fa_history'))||'[]');
+  const badge = document.getElementById('histBadge');
+  if (badge) badge.textContent = h.length > 0 ? `📋 历史(${h.length})` : '历史记录';
+}
+function showHistory() {
+  const h = JSON.parse(localStorage.getItem(userKey('fa_history'))||'[]');
+  ['formArea','resultArea','historyArea','productMgrArea','caseLibArea','contactSettingArea'].forEach(id=>{
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('historyArea').style.display='block';
+  if (!h.length) {
+    document.getElementById('historyList').innerHTML='<div style="text-align:center;color:var(--text-muted);padding:40px">暂无历史记录</div>';
+    return;
+  }
+  document.getElementById('historyList').innerHTML=h.map(item=>`
+    <div class="hist-item" onclick="loadHistory(${item.id})">
+      <div class="hist-name">${item.name}</div>
+      <div class="hist-meta">${item.time} · 需求${item.d['需求金额万']||0}万</div>
+    </div>`
+  ).join('');
+}
+function loadHistory(id) {
+  const h = JSON.parse(localStorage.getItem('fa_history')||'[]');
+  const item = h.find(x=>x.id===id);
+  if (!item) return;
+  renderResult(item.d, item.result);
+}
+function clearHistory() {
+  if (!confirm('确认清空所有历史记录？')) return;
+  localStorage.removeItem('fa_history');
+  updateHistBadge();
+  showHistory();
+}
+
+// ── 负债明细管理 ──
+function addDebtItem() {
+  const div = document.createElement('div');
+  div.className = 'debt-item';
+  div.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap';
+  div.innerHTML = `
+    <select class="di_type" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:0 0 auto">
+      <option value="银行经营贷">银行经营贷</option>
+      <option value="银行消费贷">银行消费贷</option>
+      <option value="银行房贷">银行房贷</option>
+      <option value="网商/微众贷">网商/微众贷</option>
+      <option value="网贷/消费贷">网贷/消费贷</option>
+      <option value="信用卡">信用卡</option>
+      <option value="民间借贷">民间借贷</option>
+      <option value="担保公司">担保公司</option>
+    </select>
+    <input type="text" class="di_bank" placeholder="机构名称" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:1;min-width:80px">
+    <input type="number" class="di_amount" placeholder="金额(万)" min="0" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;width:90px" oninput="calcTotalDebt()">
+    <select class="di_expire" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:0 0 auto">
+      <option value="">到期时间</option>
+      <option value="3个月内">3个月内到期</option>
+      <option value="6个月内">6个月内到期</option>
+      <option value="1年内">1年内到期</option>
+      <option value="1年以上">1年以上</option>
+      <option value="长期">长期(房贷等)</option>
+    </select>
+    <button onclick="this.closest('.debt-item').remove();calcTotalDebt()" style="color:var(--text-dim);background:none;border:none;cursor:pointer;font-size:16px;flex-shrink:0">✕</button>`;
+  document.getElementById('debtItems').appendChild(div);
+}
+
+function calcTotalDebt() {
+  let total = 0;
+  let orgCount = 0;
+  let hasWebLoan = false;
+  let hasSoonExpire = false;
+  const items = [];
+
+  document.querySelectorAll('.debt-item').forEach(div => {
+    const type   = div.querySelector('.di_type')?.value||'';
+    const bank   = div.querySelector('.di_bank')?.value?.trim()||'';
+    const amount = parseFloat(div.querySelector('.di_amount')?.value)||0;
+    const expire = div.querySelector('.di_expire')?.value||'';
+    if (amount > 0 || bank) {
+      total += amount;
+      orgCount++;
+      if (type.includes('网贷') || type.includes('网商') || type.includes('消费贷')) hasWebLoan = true;
+      if (expire === '3个月内' || expire === '6个月内') hasSoonExpire = true;
+      items.push({ type, bank, amount, expire });
+    }
+  });
+
+  // 自动更新总负债
+  const debtEl = document.getElementById('f_debt');
+  if (debtEl && total > 0) debtEl.value = total;
+
+  // 自动更新机构数
+  const orgEl = document.getElementById('f_loan_orgs');
+  if (orgEl && orgCount > 0) orgEl.value = orgCount;
+
+  // 风险提示
+  const warnEl = document.getElementById('debtWarning');
+  const warns = [];
+  if (hasWebLoan) warns.push('⚠️ 有网贷/消费贷记录，银行审批会重点关注');
+  if (hasSoonExpire) warns.push('⚠️ 有贷款即将到期，银行会评估续贷压力');
+  if (orgCount >= 4) warns.push('⚠️ 贷款机构数较多（'+orgCount+'家），部分银行要求≤3家');
+  if (warnEl) {
+    if (warns.length) { warnEl.style.display='block'; warnEl.innerHTML=warns.join('<br>'); }
+    else warnEl.style.display='none';
+  }
+
+  window._debtItems = items;
+}
+
+function syncDebtDisplay() {
+  // 手动填写总负债时同步
+  window._debtItems = window._debtItems || [];
+}
+
+function getDebtDetail() {
+  const items = window._debtItems || [];
+  if (!items.length) return '';
+  return items.map(d => `${d.type}/${d.bank}/${d.amount}万/${d.expire||'未知到期'}`).join('；');
+}
+
+function resetDebtItems() {
+  document.getElementById('debtItems').innerHTML = `
+    <div class="debt-item" style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap">
+      <select class="di_type" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:0 0 auto">
+        <option value="银行经营贷">银行经营贷</option>
+        <option value="银行消费贷">银行消费贷</option>
+        <option value="银行房贷">银行房贷</option>
+        <option value="网商/微众贷">网商/微众贷</option>
+        <option value="网贷/消费贷">网贷/消费贷</option>
+        <option value="信用卡">信用卡</option>
+        <option value="民间借贷">民间借贷</option>
+        <option value="担保公司">担保公司</option>
+      </select>
+      <input type="text" class="di_bank" placeholder="机构名称" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:1;min-width:80px">
+      <input type="number" class="di_amount" placeholder="金额(万)" min="0" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;width:90px" oninput="calcTotalDebt()">
+      <select class="di_expire" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;flex:0 0 auto">
+        <option value="">到期时间</option>
+        <option value="3个月内">3个月内到期</option>
+        <option value="6个月内">6个月内到期</option>
+        <option value="1年内">1年内到期</option>
+        <option value="1年以上">1年以上</option>
+        <option value="长期">长期(房贷等)</option>
+      </select>
+      <button onclick="this.closest('.debt-item').remove();calcTotalDebt()" style="color:var(--text-dim);background:none;border:none;cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
+    </div>`;
+  window._debtItems = [];
+}
+
+// ── 企业类型切换 ──
+function onBizTypeChange(bizType) {
+  const isGeti = bizType.includes('个体') || bizType.includes('独资');
+
+  // 个体户隐藏开票/纳税/纳税等级/对公流水
+  const corpFields = ['field_invoice','field_tax','field_tax_grade','field_cashflow'];
+  // 有限公司隐藏收款码相关字段
+  const qrFields = ['field_qr_flow','field_wx_flow','field_qr_months'];
+  qrFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isGeti ? '' : 'none';
+  });
+  corpFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isGeti ? 'none' : '';
+  });
+
+  // 个体户时收款码流水标签更突出
+  const qrLabel = document.getElementById('qr_label');
+  const qrHint  = document.getElementById('qr_hint');
+  if (qrLabel) {
+    if (isGeti) {
+      qrLabel.innerHTML = '月均银联收款码流水（万元）<span class="req">*</span>';
+      qrLabel.style.color = 'var(--gold)';
+      qrHint.textContent  = '个体户主要融资依据，银联POS/码牌收款记录';
+    } else {
+      qrLabel.innerHTML = '月均银联收款码流水（万元）';
+      qrLabel.style.color = '';
+      qrHint.textContent  = '银联POS/码牌收款，非微信/支付宝';
+    }
+  }
+
+  // 个体户时清空并禁用开票/纳税字段
+  if (isGeti) {
+    ['f_invoice','f_tax'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value='0'; }
+    });
+    const tg = document.getElementById('f_tax_grade');
+    if (tg) tg.value = '';
+  }
+}
+
+// ══ 产品库管理 ══
+function showProductMgr() {
+  ['formArea','resultArea','historyArea','productMgrArea','caseLibArea','contactSettingArea'].forEach(id=>{
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('productMgrArea').style.display='block';
+  renderCustomProducts();
+  window.scrollTo(0,0);
+}
+
+function saveProduct() {
+  const p = {
+    id: 'CUSTOM_'+Date.now(),
+    产品名称: document.getElementById('pm_name').value.trim(),
+    所属银行: document.getElementById('pm_bank').value.trim(),
+    产品类型: document.getElementById('pm_type').value,
+    利率范围: document.getElementById('pm_rate').value.trim(),
+    额度上限: document.getElementById('pm_maxamt').value,
+    期限: document.getElementById('pm_term').value,
+    申请渠道: document.getElementById('pm_channel').value,
+    法人类别: document.getElementById('pm_legal').value,
+    征信要求: document.getElementById('pm_credit').value.trim(),
+    核心公式: document.getElementById('pm_formula').value.trim(),
+    备注: document.getElementById('pm_remark').value.trim(),
+    录入时间: new Date().toLocaleDateString(),
+  };
+  if (!p['产品名称'] || !p['所属银行']) {
+    showPmStatus('请填写产品名称和所属银行', false);
+    return;
+  }
+  const list = JSON.parse(localStorage.getItem('fa_custom_products')||'[]');
+  const idx = list.findIndex(x=>x['产品名称']===p['产品名称']&&x['所属银行']===p['所属银行']);
+  if (idx>=0) list[idx]=p; else list.push(p);
+  localStorage.setItem('fa_custom_products', JSON.stringify(list));
+  showPmStatus('✅ 保存成功！下次分析将自动包含此产品', true);
+  renderCustomProducts();
+  clearProductForm();
+}
+
+function clearProductForm() {
+  ['pm_name','pm_bank','pm_rate','pm_maxamt','pm_term','pm_credit','pm_formula','pm_remark'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value='';
+  });
+}
+
+function deleteProduct(id) {
+  const list = JSON.parse(localStorage.getItem('fa_custom_products')||'[]');
+  localStorage.setItem('fa_custom_products', JSON.stringify(list.filter(p=>p.id!==id)));
+  renderCustomProducts();
+}
+
+function editProduct(id) {
+  const list = JSON.parse(localStorage.getItem('fa_custom_products')||'[]');
+  const p = list.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('pm_name').value = p['产品名称']||'';
+  document.getElementById('pm_bank').value = p['所属银行']||'';
+  document.getElementById('pm_rate').value = p['利率范围']||'';
+  document.getElementById('pm_maxamt').value = p['额度上限']||'';
+  document.getElementById('pm_term').value = p['期限']||'';
+  document.getElementById('pm_credit').value = p['征信要求']||'';
+  document.getElementById('pm_formula').value = p['核心公式']||'';
+  document.getElementById('pm_remark').value = p['备注']||'';
+  window.scrollTo(0,0);
+}
+
+function renderCustomProducts() {
+  const list = JSON.parse(localStorage.getItem('fa_custom_products')||'[]');
+  const el = document.getElementById('customProductList');
+  if(!list.length) { el.innerHTML='<div style="color:var(--text-dim);padding:10px">暂无自定义产品，可在上方录入</div>'; return; }
+  el.innerHTML = list.map(p=>`
+    <div style="background:var(--bg3);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div style="font-weight:600;margin-bottom:2px">${p['产品名称']} · ${p['所属银行']}</div>
+        <div style="color:var(--text-muted);font-size:11px">${p['产品类型']} | 利率${p['利率范围']} | ${p['申请渠道']} | 录入${p['录入时间']}</div>
+        ${p['核心公式']?`<div style="color:var(--text-dim);font-size:11px;margin-top:2px">${p['核心公式']}</div>`:''}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;margin-left:8px">
+        <button onclick="editProduct('${p.id}')" style="font-size:11px;padding:3px 8px;background:var(--blue-bg);color:var(--blue);border:1px solid rgba(80,144,224,0.3);border-radius:4px;cursor:pointer">编辑</button>
+        <button onclick="deleteProduct('${p.id}')" style="font-size:11px;padding:3px 8px;background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,80,0.3);border-radius:4px;cursor:pointer">删除</button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function showPmStatus(msg, ok) {
+  const el = document.getElementById('pmStatus');
+  el.style.display='block';
+  el.style.background = ok ? 'var(--green-bg)' : 'var(--red-bg)';
+  el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  el.textContent = msg;
+  setTimeout(()=>el.style.display='none', 3000);
+}
+
+// ══ 联系方式管理 ══
+function showContactSetting() {
+  ['formArea','resultArea','historyArea','productMgrArea','caseLibArea','contactSettingArea'].forEach(id=>{
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('contactSettingArea').style.display='block';
+  loadContactFields();
+  window.scrollTo(0,0);
+}
+
+function loadContactFields() {
+  const c = JSON.parse(localStorage.getItem('fa_contact')||'{}');
+  document.getElementById('cs_name').value    = c.name||'';
+  document.getElementById('cs_phone').value   = c.phone||'';
+  document.getElementById('cs_company').value = c.company||'';
+  document.getElementById('cs_area').value    = c.area||'';
+  document.getElementById('cs_desc').value    = c.desc||'';
+  document.getElementById('cs_title').value   = c.title||'';
+  updatePreview();
+}
+
+function updatePreview() {
+  const name    = document.getElementById('cs_name')?.value    || '助贷顾问';
+  const phone   = document.getElementById('cs_phone')?.value   || '微信同号';
+  const company = document.getElementById('cs_company')?.value || '专业助贷服务';
+  const area    = document.getElementById('cs_area')?.value    || '重庆';
+  const desc    = document.getElementById('cs_desc')?.value    || '专注重庆市场，免费评估，成功收费';
+  const title   = document.getElementById('cs_title')?.value   || '需要专业协助办理？';
+  document.getElementById('preview_name').textContent    = name;
+  document.getElementById('preview_phone').textContent   = phone;
+  document.getElementById('preview_company').textContent = company;
+  document.getElementById('preview_area').textContent    = area;
+  document.getElementById('preview_desc').textContent    = desc;
+  document.getElementById('preview_title').textContent   = title;
+}
+
+// 实时预览
+['cs_name','cs_phone','cs_company','cs_area','cs_desc','cs_title'].forEach(id => {
+  setTimeout(()=>{
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updatePreview);
+  }, 500);
+});
+
+function saveContact() {
+  const c = {
+    name:    document.getElementById('cs_name').value.trim(),
+    phone:   document.getElementById('cs_phone').value.trim(),
+    company: document.getElementById('cs_company').value.trim(),
+    area:    document.getElementById('cs_area').value.trim(),
+    desc:    document.getElementById('cs_desc').value.trim(),
+    title:   document.getElementById('cs_title').value.trim(),
+  };
+  localStorage.setItem('fa_contact', JSON.stringify(c));
+  applyContact(c);
+  const el = document.getElementById('csStatus');
+  el.style.display='block';
+  el.style.background='var(--green-bg)';
+  el.style.color='var(--green)';
+  el.textContent='✅ 保存成功！分析结果页面将显示你的联系方式';
+  setTimeout(()=>el.style.display='none', 3000);
+}
+
+function generateClientVersion() {
+  const c = JSON.parse(localStorage.getItem('fa_contact')||'{}');
+  if (!c.name || !c.phone) {
+    alert('请先在"联系方式"里填写并保存你的姓名和电话');
+    return;
+  }
+  const clientName = document.getElementById('cs_client_name')?.value?.trim() || '';
+  const clientTip  = document.getElementById('cs_client_tip')?.value?.trim() || '请按实际情况填写，填写越详细分析越准确';
+
+  // 在head里注入锁定脚本（最可靠的方式）
+  const contactStr = JSON.stringify(c).replace(/</g,'\u003c').replace(/>/g,'\u003e');
+  const tipStr = clientTip.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/</g,'\u003c');
+
+  const lockScript = '<scr'+'ipt>window.__LOCKED_CONTACT__='+contactStr+';window.__IS_CLIENT__=true;window.__CLIENT_TIP__="'+tipStr+'";<\/scr'+'ipt>';
+
+  // 读取原始HTML
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', window.location.href, false); // 同步请求
+  try {
+    xhr.send();
+    let html = xhr.responseText;
+    html = html.replace('<head>', '<head>' + lockScript);
+    html = html.replace('<title>融资分析师</title>', '<title>融资分析师' + (clientName?'_'+clientName:'') + '</title>');
+    doDownload(html, clientName, c.name);
+  } catch(e) {
+    // file://协议同步XHR失败，用outerHTML方案
+    let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+    // 确保锁定脚本在最前面
+    html = html.replace('<head>', '<head>' + lockScript);
+    html = html.replace('<title>融资分析师</title>', '<title>融资分析师' + (clientName?'_'+clientName:'') + '</title>');
+    doDownload(html, clientName, c.name);
+  }
+}
+
+function doDownload(html, clientName, contactName) {
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '融资分析师_' + (clientName||'客户版') + '_' + contactName + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  const el = document.getElementById('csStatus');
+  if(el) {
+    el.style.display='block';
+    el.style.background='var(--green-bg)';
+    el.style.color='var(--green)';
+    el.textContent='✅ 客户版本已生成，请发给客户！';
+    setTimeout(()=>el.style.display='none', 4000);
+  }
+}
+
+
+function applyContact(c) {
+  if (!c || !c.name) return;
+  const card = document.getElementById('contactCard');
+  if (!card) return;
+  if (document.getElementById('c_name'))    document.getElementById('c_name').textContent    = c.name;
+  if (document.getElementById('c_phone'))   document.getElementById('c_phone').textContent   = c.phone||'微信同号';
+  if (document.getElementById('c_company')) document.getElementById('c_company').textContent = c.company||'专业助贷服务';
+  if (document.getElementById('c_area'))    document.getElementById('c_area').textContent    = c.area||'重庆';
+  if (document.getElementById('c_desc'))    document.getElementById('c_desc').textContent    = c.desc||'';
+  if (document.getElementById('contactTitle')) document.getElementById('contactTitle').textContent = c.title||'需要专业协助办理？';
+  // 有联系方式就显示，否则隐藏
+  card.style.display = c.name ? 'block' : 'none';
+}
+
+function showContact() {
+  const c = JSON.parse(localStorage.getItem('fa_contact')||'{}');
+  if (!c.phone && !c.name) {
+    alert('请先在设置里填写联系方式');
+    return;
+  }
+  // 复制联系方式到剪贴板
+  const text = [c.name, c.phone, c.company, c.area].filter(Boolean).join(' | ');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(()=>alert('联系方式已复制：\n'+text));
+  } else {
+    alert('联系方式：\n'+text);
+  }
+}
+
+// ══ 多用户支持 ══
+let currentUser = '';
+
+function initUser() {
+  const saved = localStorage.getItem('fa_current_user');
+  if (saved) {
+    currentUser = saved;
+    document.getElementById('userName').textContent = saved;
+    document.getElementById('loginModal').style.display = 'none';
+  } else {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  const modal = document.getElementById('loginModal');
+  modal.style.display = 'flex';
+  // 显示历史用户
+  const users = JSON.parse(localStorage.getItem('fa_users')||'[]');
+  const el = document.getElementById('savedUsers');
+  if (users.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">或选择已有用户：</div>' +
+      users.map(u => `<button onclick="selectUser('${u}')" style="margin:3px;padding:5px 12px;background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px">${u}</button>`).join('');
+  }
+}
+
+function selectUser(name) {
+  document.getElementById('loginName').value = name;
+  doLogin();
+}
+
+function doLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  if (!name) { alert('请输入姓名或工号'); return; }
+  currentUser = name;
+  localStorage.setItem('fa_current_user', name);
+  // 保存用户列表
+  const users = JSON.parse(localStorage.getItem('fa_users')||'[]');
+  if (!users.includes(name)) { users.push(name); localStorage.setItem('fa_users', JSON.stringify(users)); }
+  document.getElementById('userName').textContent = name;
+  document.getElementById('loginModal').style.display = 'none';
+}
+
+function switchUser() {
+  localStorage.removeItem('fa_current_user');
+  currentUser = '';
+  showLogin();
+}
+
+// ── 用户专属存储键（案例库/历史按用户隔离）──
+function userKey(key) {
+  return currentUser ? `${key}_${currentUser}` : key;
+}
+
+// ══ 审批结果回填 ══
+function fillResult(caseId) {
+  const results = ['通过，金额足额', '通过，额度缩水', '拒绝-征信问题', '拒绝-负债过高', '拒绝-税负偏低', '拒绝-其他原因', '审批中'];
+  const r = prompt('选择审批结果（输入数字）：\n' + results.map((r,i)=>`${i+1}. ${r}`).join('\n'));
+  if (!r) return;
+  const idx = parseInt(r) - 1;
+  if (idx < 0 || idx >= results.length) return;
+  const result = results[idx];
+  const actualAmt = (result.includes('通过') && !result.includes('缩水')) ? null :
+    result.includes('缩水') ? prompt('实际批了多少万？') : null;
+
+  const cases = JSON.parse(localStorage.getItem(userKey('fa_cases'))||'[]');
+  const c = cases.find(x=>x.id===caseId);
+  if (!c) return;
+  c['审批结果'] = result;
+  if (actualAmt) c['实际金额'] = actualAmt;
+  c['结果时间'] = new Date().toLocaleDateString();
+  localStorage.setItem(userKey('fa_cases'), JSON.stringify(cases));
+  renderCases();
+  // 更新通过率统计
+  updatePassRateStats();
+}
+
+function updatePassRateStats() {
+  const cases = JSON.parse(localStorage.getItem(userKey('fa_cases'))||'[]');
+  const withResult = cases.filter(c=>c['审批结果']&&c['审批结果']!=='审批中');
+  if (!withResult.length) return;
+  const passed = withResult.filter(c=>c['审批结果'].includes('通过')).length;
+  const rate = Math.round(passed/withResult.length*100);
+  console.log(`实际通过率: ${rate}% (${passed}/${withResult.length})`);
+}
+
+// ══ 导出报告 ══
+function exportReport() {
+  if (!window._lastAnalysis) { alert('请先完成分析'); return; }
+  const { d, result, ai } = window._lastAnalysis;
+  const top8 = result.topProducts||[];
+  const scores = result.scores||{};
+
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>融资分析报告 - ${d['企业名称']||'客户'}</title>
+<style>
+  body{font-family:'Microsoft YaHei',sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#333;font-size:14px}
+  h1{color:#C9A84C;border-bottom:2px solid #C9A84C;padding-bottom:8px}
+  h2{color:#555;font-size:15px;margin-top:20px;border-left:4px solid #C9A84C;padding-left:10px}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9f9f9;padding:12px;border-radius:8px;margin:10px 0}
+  .info-item{font-size:13px}.info-label{color:#888;font-size:11px}
+  .score-box{background:#f0f0f0;border-radius:8px;padding:12px;margin:10px 0}
+  .score-row{display:flex;gap:10px;flex-wrap:wrap}
+  .score-item{background:#fff;border-radius:6px;padding:6px 12px;font-size:13px;border:1px solid #ddd}
+  .product{background:#fff;border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:10px}
+  .product-name{font-weight:700;font-size:15px;color:#C9A84C}
+  .product-meta{color:#888;font-size:12px;margin:4px 0}
+  .debt-calc{background:#fff8e7;border-radius:6px;padding:8px;font-size:13px;margin:6px 0;font-family:monospace}
+  .prob{display:inline-block;padding:2px 10px;border-radius:10px;font-size:12px;font-weight:700}
+  .prob-high{background:#e8f5ee;color:#4CAF82} .prob-mid{background:#fff8e0;color:#E0A040} .prob-low{background:#ffeaea;color:#E05050}
+  .apply-tip{background:#e8f0ff;border-radius:6px;padding:8px;font-size:12px;margin-top:6px;color:#5090E0}
+  .gap-box{background:#f5f5f5;border-radius:6px;padding:8px;font-size:12px;margin-top:6px}
+  .profile-text{border-left:3px solid #C9A84C;padding-left:12px;line-height:1.8;color:#444}
+  .channel-box{background:#e8f0ff;border-radius:8px;padding:12px;margin:10px 0;font-size:13px}
+  .remedy-item{background:#f0f7ff;border-left:3px solid #5090E0;padding:8px 12px;border-radius:4px;margin-bottom:6px;font-size:13px}
+  .footer{text-align:center;color:#aaa;font-size:11px;margin-top:30px;border-top:1px solid #eee;padding-top:10px}
+  @media print{body{max-width:100%}}
+</style>
+</head>
+<body>
+<h1>📊 融资分析报告</h1>
+<div style="color:#888;font-size:12px;margin-bottom:16px">
+  分析时间：${new Date().toLocaleString()} | 分析师：${currentUser||'未知'} | 综合评分：${result.avgRisk||0}分
+</div>
+
+<h2>客户基本信息</h2>
+<div class="info-grid">
+  <div class="info-item"><div class="info-label">企业名称</div>${d['企业名称']||'-'}</div>
+  <div class="info-item"><div class="info-label">企业类型</div>${d['企业类型']||'-'}</div>
+  <div class="info-item"><div class="info-label">所属行业</div>${d['行业']||'-'}</div>
+  <div class="info-item"><div class="info-label">所在地区</div>${d['地区']||'-'}</div>
+  <div class="info-item"><div class="info-label">成立年限</div>${d['成立年限']||0}年</div>
+  <div class="info-item"><div class="info-label">融资需求</div>${d['需求金额万']||0}万元</div>
+  <div class="info-item"><div class="info-label">年开票额</div>${d['年开票额万']||0}万</div>
+  <div class="info-item"><div class="info-label">年纳税额</div>${d['年纳税额万']||0}万</div>
+  <div class="info-item"><div class="info-label">月均对公流水</div>${d['月均对公流水万']||0}万</div>
+  <div class="info-item"><div class="info-label">月均银联码流水</div>${d['月均银联收款码流水万']||0}万</div>
+  <div class="info-item"><div class="info-label">企业负债</div>${d['企业负债万']||0}万</div>
+  <div class="info-item"><div class="info-label">总资产</div>${d['总资产万']||0}万</div>
+  <div class="info-item"><div class="info-label">法人征信</div>${d['法人征信']||'-'}</div>
+  <div class="info-item"><div class="info-label">抵押情况</div>${d['抵押情况']||'-'}</div>
+</div>
+
+<h2>综合评分</h2>
+<div class="score-box">
+  <div style="font-size:24px;font-weight:800;color:#C9A84C;margin-bottom:8px">${result.avgRisk||0} <span style="font-size:14px;color:#888">/ 100</span></div>
+  <div class="score-row">
+    ${Object.entries(scores).map(([k,v])=>{
+      const names={credit:'信用',debt:'负债',flow:'流水',tax:'纳税',asset:'资产',biz:'经营',legal:'司法',behavior:'行为',policy:'政策'};
+      return `<div class="score-item">${names[k]||k}: <strong>${v}</strong></div>`;
+    }).join('')}
+  </div>
+  ${ai.difficulty?`<div style="margin-top:8px;font-size:13px">融资难度：<strong>${ai.difficulty}</strong> ${ai.difficulty_reason?'— '+ai.difficulty_reason:''}</div>`:''}
+</div>
+
+<h2>企业画像分析</h2>
+<div class="profile-text">${ai.profile||'-'}</div>
+
+<h2>渠道建议</h2>
+<div class="channel-box">${ai.channel_advice||result.channelAdvice||'-'}</div>
+
+<h2>推荐融资方案（${top8.length}个）</h2>
+${top8.map((p,i)=>{
+  const ap = (ai.products||[])[i]||{};
+  const probClass = p.passProb>=70?'prob-high':p.passProb>=50?'prob-mid':'prob-low';
+  return `<div class="product">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="background:#C9A84C;color:#000;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i+1}</span>
+      <span class="product-name">${p.name}</span>
+      <span class="product-meta">${p.bank}</span>
+      <span class="prob ${probClass}" style="margin-left:auto">通过率${p.passProb}%</span>
+    </div>
+    <div class="debt-calc">理论额度 ${p.theoretical||p.estAmt}万 - 现有负债 ${d['企业负债万']||0}万 = 可贷 <strong>${p.estAmt}万</strong></div>
+    <div class="product-meta">利率 ${p.rateLower}%-${p.rateUpper}% | 期限 ${p.term}月 | ${p.channel}</div>
+    ${ap.why?`<div style="margin-top:6px;font-size:13px;line-height:1.7;color:#555">${ap.why}</div>`:''}
+    ${ap.key_risk?`<div style="background:#fff8e0;border-radius:6px;padding:6px 10px;font-size:12px;color:#E0A040;margin-top:6px">⚠️ ${ap.key_risk}</div>`:''}
+    ${ap.negotiation_tip?`<div class="apply-tip">💬 ${ap.negotiation_tip}</div>`:''}
+    ${p.applyTip?`<div class="apply-tip">📱 ${p.applyTip}</div>`:''}
+  </div>`;
+}).join('')}
+
+${(ai.path||[]).length?`<h2>融资路径规划</h2>
+${(ai.path||[]).map((p,i)=>`<div style="display:flex;gap:10px;margin-bottom:10px">
+  <div style="background:#C9A84C;color:#000;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${i+1}</div>
+  <div><div style="font-weight:600;margin-bottom:3px">${p.title}</div><div style="font-size:13px;color:#666">${p.desc}</div></div>
+</div>`).join('')}`:''}
+
+${result.remedy&&!result.remedy.includes('综合资质良好')?`<h2>资质提升建议</h2>
+${result.remedy.split('\n').filter(l=>l.trim()).map(l=>`<div class="remedy-item">${l.replace(/^[•·\-\s]+/,'')}</div>`).join('')}`:''}
+
+<h2>顾问综合判断</h2>
+<div style="line-height:1.8;color:#444">${ai.advice||'-'}</div>
+
+<div class="footer">
+  本报告由融资分析师系统生成 | 仅供内部参考 | ${new Date().toLocaleDateString()}
+</div>
+</body>
+</html>`;
+
+  // 创建下载
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `融资分析报告_${d['企业名称']||'客户'}_${new Date().toLocaleDateString().replace(/\//g,'-')}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── 一键存为案例 ──
+function saveCurrentAsCase() {
+  if (!window._lastAnalysis) {
+    alert('请先完成一次分析');
+    return;
+  }
+  const { d, result, ai } = window._lastAnalysis;
+  const top = (result.topProducts||[])[0]||{};
+
+  const c = {
+    id: 'CASE_'+Date.now(),
+    行业:     d['行业']||'',
+    企业类型: d['企业类型']||'',
+    产品:     top.name||ai.products?.[0]?.name||'',
+    金额:     top.estAmt||'',
+    利率:     top.rateLower||'',
+    审批周期: '待确认',
+    客户情况: [
+      d['企业类型']&&`类型:${d['企业类型']}`,
+      d['年纳税额万']>0&&`年纳税${d['年纳税额万']}万`,
+      d['月均银联收款码流水万']>0&&`银联码流水${d['月均银联收款码流水万']}万/月`,
+      d['月均对公流水万']>0&&`对公流水${d['月均对公流水万']}万/月`,
+      d['企业负债万']>0&&`负债${d['企业负债万']}万`,
+      d['总资产万']>0&&`资产${d['总资产万']}万`,
+      d['法人征信']&&`征信:${d['法人征信']}`,
+      d['成立年限']>0&&`成立${d['成立年限']}年`,
+    ].filter(Boolean).join('，'),
+    成功关键: ai.advice||'',
+    障碍解决: ai.remedy_advice||result.remedy||'',
+    录入时间: new Date().toLocaleDateString(),
+    // 保存完整数据供后续参考
+    完整评分: JSON.stringify(result.scores||{}),
+    综合评分: result.avgRisk||0,
+    推荐产品: (result.topProducts||[]).slice(0,3).map(p=>p.name).join('、'),
+  };
+
+  const list = JSON.parse(localStorage.getItem(userKey('fa_cases'))||'[]');
+  list.unshift(c);
+  localStorage.setItem(userKey('fa_cases'), JSON.stringify(list));
+
+  // 按钮反馈
+  const btn = document.getElementById('saveCaseBtn');
+  btn.textContent = '✅ 已保存';
+  btn.style.color = 'var(--green)';
+  btn.style.background = 'var(--green-bg)';
+  setTimeout(()=>{
+    btn.textContent = '📚 存为案例';
+    btn.style.background = '';
+  }, 2000);
+}
+
+// ── 多笔贷款管理 ──
+let loanItemCount = 1;
+
+function addLoanItem() {
+  loanItemCount++;
+  const div = document.createElement('div');
+  div.className = 'loan-item';
+  div.style.cssText = 'background:var(--bg4);border-radius:8px;padding:10px;margin-bottom:8px;position:relative';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:11px;color:var(--gold);font-weight:600">第${loanItemCount}笔</span>
+      <button onclick="this.closest('.loan-item').remove();updateTotalAmount()" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer">✕ 删除</button>
+    </div>
+    <div class="fields">
+      <div class="field"><label>产品名称</label><input type="text" class="li_product" placeholder="如：建行商户云贷"></div>
+      <div class="field"><label>所属银行</label><input type="text" class="li_bank" placeholder="如：建设银行"></div>
+      <div class="field"><label>批款金额（万）</label><input type="number" class="li_amount" placeholder="0" min="0" oninput="updateTotalAmount()"></div>
+      <div class="field"><label>实际利率（%）</label><input type="number" class="li_rate" placeholder="0" step="0.1" min="0"></div>
+      <div class="field"><label>审批周期</label>
+        <select class="li_days">
+          <option value="当天">当天放款</option>
+          <option value="1-3天">1-3天</option>
+          <option value="1周">约1周</option>
+          <option value="2-4周">2-4周</option>
+          <option value="1个月以上">1个月以上</option>
+        </select>
+      </div>
+      <div class="field"><label>申请渠道</label>
+        <select class="li_channel">
+          <option value="纯线上通过">纯线上通过</option>
+          <option value="线上拒绝转线下通过">线上拒绝→线下通过</option>
+          <option value="直接线下">直接线下</option>
+        </select>
+      </div>
+    </div>`;
+  document.getElementById('loanItems').appendChild(div);
+  // 给第一笔的金额也加监听
+  document.querySelectorAll('.li_amount').forEach(el => el.oninput = updateTotalAmount);
+}
+
+function updateTotalAmount() {
+  const amounts = document.querySelectorAll('.li_amount');
+  let total = 0;
+  amounts.forEach(el => total += parseFloat(el.value)||0);
+  const totalEl = document.getElementById('cl_amount');
+  if (totalEl) totalEl.value = total > 0 ? total : '';
+}
+
+function getLoanItems() {
+  const items = [];
+  document.querySelectorAll('.loan-item').forEach((div, idx) => {
+    const product = div.querySelector('.li_product')?.value?.trim();
+    const bank    = div.querySelector('.li_bank')?.value?.trim();
+    const amount  = div.querySelector('.li_amount')?.value;
+    const rate    = div.querySelector('.li_rate')?.value;
+    const days    = div.querySelector('.li_days')?.value;
+    const channel = div.querySelector('.li_channel')?.value;
+    if (product || bank || amount) {
+      items.push({ 序号:idx+1, 产品:product||'', 银行:bank||'', 金额:amount||'', 利率:rate||'', 审批周期:days||'', 渠道:channel||'' });
+    }
+  });
+  return items;
+}
+
+// ══ 案例库 ══
+function showCaseLib() {
+  ['formArea','resultArea','historyArea','productMgrArea','caseLibArea','contactSettingArea'].forEach(id=>{
+    document.getElementById(id).style.display='none';
+  });
+  document.getElementById('caseLibArea').style.display='block';
+  renderCases();
+  window.scrollTo(0,0);
+}
+
+function saveCase() {
+  const loans = getLoanItems();
+  const mainLoan = loans[0]||{};
+  const c = {
+    id: 'CASE_'+Date.now(),
+    行业:       v('cl_industry'),
+    企业类型:   document.getElementById('cl_biztype').value,
+    产品:       loans.map(l=>l['产品']).filter(Boolean).join('+') || mainLoan['产品']||'',
+    银行:       loans.map(l=>l['银行']).filter(Boolean).join('+') || mainLoan['银行']||'',
+    金额:       v('cl_amount') || loans.reduce((s,l)=>s+(parseFloat(l['金额'])||0),0).toString(),
+    利率:       mainLoan['利率']||'',
+    审批周期:   mainLoan['审批周期']||'',
+    贷款明细:   loans,  // 保存所有笔
+    贷款笔数:   loans.length,
+    预测金额:   v('cl_pred_amount'),
+    财务情况:   v('cl_finance'),
+    负债情况:   v('cl_debt'),
+    征信情况:   v('cl_credit'),
+    申请渠道:   loans.map(l=>l['渠道']).filter(Boolean).join('；'),
+    特殊情况:   document.getElementById('cl_special_type').value,
+    障碍解决:   document.getElementById('cl_obstacle').value.trim(),
+    成功关键:   document.getElementById('cl_key').value.trim(),
+    话术:       document.getElementById('cl_script')?document.getElementById('cl_script').value.trim():'',
+    材料清单:   v('cl_materials'),
+    录入时间:   new Date().toLocaleDateString(),
+    客户情况:   [v('cl_finance'), v('cl_debt'), v('cl_credit')].filter(Boolean).join('；'),
+  };
+  if (!loans.length || !c['行业']) {
+    showClStatus('请填写行业和至少一笔贷款信息', false);
+    return;
+  }
+  const list = JSON.parse(localStorage.getItem(userKey('fa_cases'))||'[]');
+  list.unshift(c);
+  localStorage.setItem(userKey('fa_cases'), JSON.stringify(list));
+  showClStatus('✅ 案例保存成功！', true);
+  // 清空表单
+  // 重置贷款明细，只保留第一笔
+  document.getElementById('loanItems').innerHTML = `
+    <div class="loan-item" style="background:var(--bg4);border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="font-size:11px;color:var(--gold);margin-bottom:6px;font-weight:600">第1笔</div>
+      <div class="fields">
+        <div class="field"><label>产品名称</label><input type="text" class="li_product" placeholder="如：农行商户e贷"></div>
+        <div class="field"><label>所属银行</label><input type="text" class="li_bank" placeholder="如：农业银行"></div>
+        <div class="field"><label>批款金额（万）</label><input type="number" class="li_amount" placeholder="0" min="0" oninput="updateTotalAmount()"></div>
+        <div class="field"><label>实际利率（%）</label><input type="number" class="li_rate" placeholder="0" step="0.1"></div>
+        <div class="field"><label>审批周期</label>
+          <select class="li_days"><option value="当天">当天放款</option><option value="1-3天">1-3天</option><option value="1周">约1周</option><option value="2-4周">2-4周</option></select>
+        </div>
+        <div class="field"><label>申请渠道</label>
+          <select class="li_channel"><option value="纯线上通过">纯线上通过</option><option value="线上拒绝转线下通过">线上拒绝→线下通过</option><option value="直接线下">直接线下</option></select>
+        </div>
+      </div>
+    </div>`;
+  loanItemCount = 1;
+  ['cl_industry','cl_pred_amount','cl_amount','cl_finance','cl_debt','cl_credit','cl_key','cl_obstacle','cl_script','cl_materials'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  renderCases();
+}
+
+function deleteCase(id) {
+  const list = JSON.parse(localStorage.getItem(userKey('fa_cases'))||'[]');
+  localStorage.setItem(userKey('fa_cases'), JSON.stringify(list.filter(c=>c.id!==id)));
+  renderCases();
+}
+
+function renderCases() {
+  const list = JSON.parse(localStorage.getItem(userKey('fa_cases'))||'[]');
+  document.getElementById('caseCount').textContent = list.length;
+  const el = document.getElementById('caseList');
+  if(!list.length) { el.innerHTML='<div style="color:var(--text-dim);padding:10px">暂无案例，录入第一个成功案例吧</div>'; return; }
+  el.innerHTML = list.map(c=>`
+    <div style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div>
+          <div style="font-weight:600;margin-bottom:2px">${c['行业']} · ${c['企业类型']}</div>
+          <div style="font-size:12px;color:var(--text-muted)">${c['录入时间']}录入</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          ${!c['审批结果']?`<button onclick="fillResult('${c.id}')" style="font-size:11px;padding:3px 8px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(224,160,64,0.3);border-radius:4px;cursor:pointer">回填结果</button>`:`<span style="font-size:11px;padding:3px 8px;background:${c['审批结果']==='通过'?'var(--green-bg)':'var(--red-bg)'};color:${c['审批结果']==='通过'?'var(--green)':'var(--red)'};border-radius:4px">${c['审批结果']==='通过'?'✅':'❌'} ${c['审批结果']}</span>`}
+          <button onclick="deleteCase('${c.id}')" style="font-size:11px;padding:3px 8px;background:var(--red-bg);color:var(--red);border:1px solid rgba(224,80,80,0.3);border-radius:4px;cursor:pointer">删除</button>
+        </div>
+      </div>
+      <!-- 贷款明细展示 -->
+      ${c['贷款明细']&&c['贷款明细'].length>0 ? c['贷款明细'].map((l,i)=>`
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;flex-wrap:wrap">
+          <span style="background:var(--gold-dim);color:var(--gold);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">第${i+1}笔</span>
+          <span style="font-size:13px;font-weight:600">${l['产品']||''}</span>
+          <span style="font-size:12px;color:var(--text-muted)">${l['银行']||''}</span>
+          ${l['金额']?`<span style="color:var(--gold);font-size:12px">${l['金额']}万</span>`:''}
+          ${l['利率']?`<span style="font-size:11px;color:var(--text-muted)">@${l['利率']}%</span>`:''}
+          ${l['渠道']?`<span style="font-size:10px;padding:1px 6px;border-radius:3px;background:${l['渠道'].includes('线下通过')?'var(--amber-bg)':'var(--blue-bg)'};color:${l['渠道'].includes('线下通过')?'var(--amber)':'var(--blue)'}">${l['渠道']}</span>`:''}
+        </div>`).join('')
+      : `<div style="font-size:13px;color:var(--gold);font-weight:600">→ ${c['产品']||''} | ${c['金额']?c['金额']+'万':''} | ${c['利率']?'@'+c['利率']+'%':''}</div>`}
+      ${c['金额']?`<div style="font-size:12px;color:var(--text-muted);margin-top:2px">合计获批：<strong style="color:var(--gold)">${c['金额']}万</strong>${c['预测金额']?' | 系统预测：'+c['预测金额']+'万':''}</div>`:''}
+      ${c['综合评分']?`<div style="font-size:11px;color:var(--text-muted)">综合评分：${c['综合评分']}分</div>`:''}
+      <div style="font-size:12px;line-height:1.7;border-top:1px solid var(--border);padding-top:8px;margin-top:6px">
+        ${c['申请渠道']?`<div style="margin-bottom:4px"><span style="background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:4px;font-size:11px">${c['申请渠道']}</span>${c['特殊情况']&&c['特殊情况']!=='无特殊情况'?` <span style="background:var(--amber-bg);color:var(--amber);padding:2px 8px;border-radius:4px;font-size:11px">${c['特殊情况']}</span>`:''}</div>`:''}
+        ${c['财务情况']?'<div style="color:var(--text-muted)">💰 '+c['财务情况']+'</div>':''}
+        ${c['负债情况']?'<div style="color:var(--text-muted)">📊 '+c['负债情况']+'</div>':''}
+        ${c['障碍解决']&&c['障碍解决']!=='undefined'&&c['障碍解决'].length>2?'<div style="color:var(--amber);margin-top:4px">🔧 '+c['障碍解决'].substring(0,150)+'</div>':''}
+        ${c['成功关键']&&c['成功关键'].length>2?'<div style="color:var(--green);margin-top:4px">✅ '+c['成功关键'].substring(0,120)+'</div>':''}
+        ${c['话术']&&c['话术'].length>2?'<div style="color:var(--blue);margin-top:4px">💬 '+c['话术'].substring(0,100)+'</div>':''}
+        ${c['材料清单']?'<div style="color:var(--text-dim);margin-top:4px;font-size:11px">📋 材料：'+c['材料清单']+'</div>':''}
+      </div>
+    </div>`
+  ).join('');
+}
+
+function showClStatus(msg, ok) {
+  const el = document.getElementById('clStatus');
+  el.style.display='block';
+  el.style.background = ok ? 'var(--green-bg)' : 'var(--red-bg)';
+  el.style.color = ok ? 'var(--green)' : 'var(--red)';
+  el.textContent = msg;
+  setTimeout(()=>el.style.display='none', 3000);
+}
+
+// 案例库匹配（在doAnalyze里调用）
+function findSimilarCases(d) {
+  const cases = JSON.parse(localStorage.getItem(userKey('fa_cases'))||'[]');
+  if(!cases.length) return [];
+  const bizType = d['企业类型']||'';
+  const industry = d['行业']||'';
+  return cases.filter(c => 
+    c['行业'].includes(industry) || industry.includes(c['行业']) || c['企业类型']===bizType
+  ).slice(0,3);
+}
+
+// ── 下一个客户（清空表单）──
+function nextClient() {
+  // 清空所有输入
+  const inputs = ['f_name','f_industry','f_region','f_years','f_special',
+    'f_invoice','f_tax','f_cashflow','f_qr_flow','f_wx_flow',
+    'f_debt','f_assets','f_loan_orgs','f_overdue_count','f_card_usage',
+    'f_loan_count','f_aum','f_need','f_purpose','f_remark'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  // 重置选择框
+  const selects = ['f_biz_type','f_tax_grade','f_mortgage','f_guarantor',
+    'f_lawsuit','f_corp_account','f_credit','f_qr_months','f_flow_stability',
+    'f_flow_trend','f_flow_source','f_target_bank','f_existing_client','f_bank_years','f_debt_type'];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.selectedIndex = 0;
+  });
+  // 重置文件上传
+  Object.keys(uploadedFiles).forEach(k => uploadedFiles[k] = null);
+  ['credit','finance','tax'].forEach(t => {
+    const box = document.getElementById('ub_'+t);
+    const status = document.getElementById('us_'+t);
+    if (box) box.classList.remove('done');
+    if (status) status.textContent = '未上传';
+  });
+  document.getElementById('fileResult').style.display='none';
+  document.getElementById('fileStatus').style.display='none';
+  // 恢复表单显示
+  document.getElementById('resultArea').style.display='none';
+  document.getElementById('formArea').style.display='block';
+  // 恢复字段显示（重置为有限公司状态）
+  onBizTypeChange('');
+  showError('');
+  resetDebtItems();
+  window.scrollTo(0,0);
+}
+
+// ── 初始化 ──
+window.addEventListener('load', () => {
+  // 客户版本：用注入的锁定数据
+  if (window.__IS_CLIENT__ || IS_CLIENT_VERSION) {
+    const lockedC = window.__LOCKED_CONTACT__ || {};
+    if (lockedC.name) {
+      applyContact(lockedC);
+      // 隐藏管理按钮
+      ['showProductMgr','showCaseLib','showContactSetting'].forEach(fn=>{
+        document.querySelectorAll(`[onclick="${fn}()"]`).forEach(el=>el.style.display='none');
+      });
+      // 隐藏存为案例
+      const scb = document.getElementById('saveCaseBtn');
+      if(scb) scb.style.display='none';
+      // 显示客户提示
+      const tip = window.__CLIENT_TIP__ || CLIENT_TIP;
+      if (tip) {
+        const tipEl = document.createElement('div');
+        tipEl.style.cssText='background:var(--gold-dim);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--gold);line-height:1.7';
+        tipEl.textContent='💡 '+tip;
+        const cardTitle = document.querySelector('.card-title');
+        if(cardTitle) cardTitle.parentNode.insertBefore(tipEl, cardTitle.nextSibling);
+      }
+    }
+  } else {
+    initUser();
+    updateHistBadge();
+    const savedContact = JSON.parse(localStorage.getItem('fa_contact')||'{}');
+    if (savedContact.name) applyContact(savedContact);
+    else document.getElementById('contactCard').style.display='none';
+  }
+  const ck = localStorage.getItem('fa_ck')||'';
+  if (ck) document.getElementById('claude_key').value=ck;
+});
+</script>
+</body>
+</html>
