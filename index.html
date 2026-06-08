@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>融资通 · 智能融资分析</title>
+<!-- PWA配置 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0a1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="融资通">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAKSklEQVR4nO3da2xT5xkH8OPENolNIHHIjVxJgEAh4RYKbSgT0NsqVnWFTF27CUFFNzoxifGhKmObioa0wgf6AbZuDFBZV7GIVrSoTRYuTZMCIymIBEJuhGRJgGDnbuIkJrb3wcw1th/HPj631/7/xIf4nBOfR37/ed9zjt9zUOl0WRyAL1FyFwDKhXAACeEAEsIBJIQDSAgHkBAOICEcQEI4gIRwAAnhABLCASSEA0gIB5DUEuzj/NECCfYSgdZuuS7q+6vEm8+BTEhGpJQIHw7vTIgd8Igl9kctcDjcy0UmJCPSxy5YOBAL2QneBMKEw1UWYiE7AdtCgFNZJENRXK0Q+glBqD2HswLEQoFCb5qQeg4kQ8mc7RJK/8E/HLiMwQreLRXqMQe6DSULsXV4hgMDCitCGVz4hAMDCot4tBr/YQXdBit4txS+sgdS0OHA0QaL+B15oOcAEsIBpODCgTGFXTxGFvQcQEI4gIRwAAnhABLCASSEA0gIB5AQDiAhHEBCOICEcAAJ4QASwgEkKZ7PEd7Wr5tNrbrWcL+7xyxlMcJCOEJ1bN96atW23eUny5qkLEZYGFaApMSeIydjeu3nm2Us4KvKtk07T8tYgEKg5wASwgEkhANICAeQEA4gIRxAQjiApMTrHHaHo39wVMYCHoxYZdy7cigxHJ13hvPX/VXuKgDDCtAQDiApcVjx0HzuF4b4WLH38s3lzo1vfyb2XtjCQDjkkjAtJiVJH8o7pKfEzctLnHQzy9jDzjvDoexIJAgH6dUX8//0zppQ3mH39uLd24sn3ezytbvr3ywNZUciwTEHkBAOICEcQEI4gMT2Aem23eWXr90NcOP4aTHnP3ld1HrCDNvhMPaNdN0L9CRwxIJvTIKDYQVICAeQ2B5W5JK96pBl9KHz5ySD7uaZt7y38bgeL/v9Fjyg5wAS2z3Hp3/ZIHcJ4Qw9B5AQDiAhHEBCOICEcACJgbMV84g1Olr0ELuuW4ALA+EoevmY3CVEKAwrQEI4gKTQYeWNVxYUL8uUZdcTE7Zfv3dGll0rjULDUVSQVvLSPFl2PW6dQDicMKwACeEAEsIBJIQDSAo9IFW4/FzD6NiE82fqJm+9TuN+o2x6apwUlQkK4eCj4vhPJ92mqCCtuvTnEhQjHsbC8fd/1b2772vXy/KPXlu2MNV9g1Ulx5tv93Mct+ap7NKDP3Zf1djWt/on/3C93PHmk7veflrketnG9jFHskHnsWRgaFyWSsISw+HQqKNSZng+P2PQPCZLMWGJ4XAsXZiq1Ua7L7GMPrRabXLVE34YDscPVmR5LGls6/OzvUrMYsISq+HQaqJLXprvsbDG7aZqm83usXaqXuv+cnrcFJFqCxuMna24bC4pzMmY7rGwpu77cIyOT3iszUiNO/fP180jVo7jdDGahflJYhfJOibDkZgQu3PrCo+FDgfn/jiGHtOI9y8WzksWt7Lwwl44YmPUHx94OWFajMfyry91mPotrpd3e8wPLNapOi3H15HSuiOldZNu1lCxNTnR90MH/3Cg+s8fX+FdgOwYO+ZITdJ/cbikqCDNe9XhE481pM3u+HfVbanqCk+MhWP92tmLn0jxXv7td11nL7R7LNx78KLPwQUCxN6w4m3cOvHuvkrv5V33hte98cnW1xatXpGVm5mg12k0avn/GKKjVAvmJq1ckq6L1XxwtEbucvxhLBxfnG1NS566vPCxYeU3fzzXRFzhMPaN7D10ce+hi96rpPxuJWaKeunC1JVLZq5ckr68MM15JPRwwv7RyfqBYeVe0mUsHMY+y7bflR9674VXnp/rXPL+h5dKv2yUtyr/Xlide2z/eu9OS6OO+tGzc45/dl2WqgIhfzcbLKvV9svflp2qaHE4uN8fqDpwpCY6ShXUP4kLrqGfd7jxh/JMog4QYz2H05xZBmfPsWfH6j07Vgf76/lrP+wfkq4zHxgeq7rcua44x3vVyiXp6Slxd+6bJSsmKOz1HCw6dabF53KVinv1xXyJiwkcwiGFsso260PfXxdvQDgi3JB5/MKVbp+rFsxNylDq9FKEQyLnLnRQq55dNUvCQoKAcEjETzieQzgi3K3/DlD/V9czyzOnaJV42qjEmibV1NaXtOwDj4Ud1b/S6zQeC7+qbNu087REZU3m7MX2LSWLvJfHxqiLizLOX+yQvKJJMBkOVswwxK5ZmT1nliE/1zB3lmH+7BnUls8V5yAckWX7pqLtm4oC2XLt0zki18IHwhE0lYpLTZqal5WQmxWflx0vyFzU3Kz4GQZdr9tkJSVAOPxRqbiUGfqcjPhZmfG5mdNzsxJyM+PzshNiY4T/3JYXppVVtgn+tqFAOHxITtQf3PN8Vtq0jLQ4yc4jEA429A1YXLMuJPPkoplS7i4QkXudI0pFfndvszuuXO+RshiO4xY/kazVRE++nYQiIhxabXScXhszRa2OfhQJvU7jMZ3MZdxq4ziutv6elBVyHDdFq1banRMRMazMzk745sTPAtzYedeT+/1RklmYn/TddalD6UdEhONma+/la3dXLA5oUB8aHuc47sr1HrvdESXctLHuHnN9k7G+0ZiSpN+8sdDnNvm5iT6XyyUiwsFx3MmypgDDcbWhh+O44Qfjzbf7/FzT9M/h4Dq6B+ubjM5A1DcZXXPPnlqaToVjXp6B3+5EEinh+PL8rfffWRNIT1Bd2+X8oabuXuDhsNsdrR0Dj9LQZLzRbBp+4PsxMq0dA9SbZM/0vPtXXpESDlO/paHVVJA/yRFfQ4vp84pHU/pq6+9u2lBAbTk6NnHzVu+NZlNDi+lGi+lGi8n1CDn/evstg8Pj8dN8XFdNTZ4aFaWy2x2BvI8EwiccOc8c8r/Bpat3/IejvWvwrV1ltv+3TU3dY8eGd+6bb7b2NrQ+CsTtrkHerXjP9MAjHA4H19BiqqrtVKujlPP8mfAJx6Tqm4zUqiHz+InTN/f/7T9D5u/HgvauwcMnrt3uHGho7W281Ts4LNjTxoy9I/PzEp27qKrpqqrp/La2S8oJ8QFSaDjOVLcbe318C3XlBv8zvcZbfS3t/Ta7w26zW8Ymhsxj/YNjre399c2mS1e7fQ4Ku/ZX8t6dH6cqWj4tb66u6ezuUehNCU4qnc7z4Ul+nD9awHHc2i3KvUkL/Ai2+SLiCinwg3AACeEAEsIBJIQDSAgHkBAOICEcQEI4gIRwAAnhABLCASSEA0gIB5AQDiAFFw7nVADntABgC4+5OOg5gIRwACnocGBkYRG/+Z3oOYDEPxzoPFjBu6X4hAOzz1nEo9V49hw48mBFKHeThHrMgXwoWYitwz8cGFxYwbulQuo5MLgoWei3JwZ3O6SfIkKsAwQkVIsIcJ3DVQG6ECUQ8G9VgJ7DyT0Z6EJkIXgTCBYOJ0REFiJ97AKHg/M1uCAlIhH7oxY+HC44BJGMSH9+IobDBSkRidhdshThAEbhK3sgIRxAQjiAhHAACeEAEsIBJIQDSAgHkBAOICEcQEI4gIRwAAnhANL/AIUJMTGICH6AAAAAAElFTkSuQmCC">
 <style>
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -2204,6 +2212,60 @@ function copyMyLink(){
   if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>toast('✅ 已复制链接'));
   else prompt('复制:',text);
 }
+
+
+// ══ PWA 添加到主屏幕引导 ══
+let _deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();
+  _deferredPrompt=e;
+  // 显示一个小提示按钮
+  showInstallTip();
+});
+function showInstallTip(){
+  if(localStorage.getItem('rzt_install_dismissed'))return;
+  if(document.getElementById('installTip'))return;
+  const tip=document.createElement('div');
+  tip.id='installTip';
+  tip.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:linear-gradient(135deg,#1a1a3a,#0d0d22);border:1px solid rgba(200,168,75,.4);border-radius:14px;padding:14px 16px;z-index:9999;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(0,0,0,.5)';
+  tip.innerHTML=`
+    <div style="font-size:28px">📲</div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:700;color:#f5d78e">添加到桌面</div>
+      <div style="font-size:11px;color:#9a9ab0;margin-top:2px">像APP一样，点图标直接打开</div>
+    </div>
+    <button onclick="doInstall()" style="background:linear-gradient(135deg,#c8a84b,#f5d78e);color:#000;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">添加</button>
+    <button onclick="dismissInstall()" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer">×</button>`;
+  document.body.appendChild(tip);
+}
+async function doInstall(){
+  if(_deferredPrompt){
+    _deferredPrompt.prompt();
+    await _deferredPrompt.userChoice;
+    _deferredPrompt=null;
+    dismissInstall();
+  }
+}
+function dismissInstall(){
+  const t=document.getElementById('installTip');
+  if(t)t.remove();
+  localStorage.setItem('rzt_install_dismissed','1');
+}
+// 苹果设备:beforeinstallprompt不触发,单独引导
+window.addEventListener('load',()=>{
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  if(isIOS && !isStandalone && !localStorage.getItem('rzt_install_dismissed')){
+    setTimeout(()=>{
+      if(document.getElementById('installTip'))return;
+      const tip=document.createElement('div');
+      tip.id='installTip';
+      tip.style.cssText='position:fixed;bottom:80px;left:16px;right:16px;background:linear-gradient(135deg,#1a1a3a,#0d0d22);border:1px solid rgba(200,168,75,.4);border-radius:14px;padding:14px 16px;z-index:9999;box-shadow:0 8px 30px rgba(0,0,0,.5)';
+      tip.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><div style="font-size:24px">📲</div><div style="flex:1;font-size:13px;color:#f5d78e;font-weight:700">添加到主屏幕</div><button onclick="dismissInstall()" style="background:none;border:none;color:#666;font-size:20px;cursor:pointer">×</button></div><div style="font-size:11px;color:#9a9ab0;margin-top:8px;line-height:1.6">点击底部 <b style="color:#f5d78e">分享按钮 ⬆️</b> → 选择 <b style="color:#f5d78e">"添加到主屏幕"</b>，即可像APP一样使用</div>`;
+      document.body.appendChild(tip);
+    },3000);
+  }
+});
 
 </script>
 </body>
