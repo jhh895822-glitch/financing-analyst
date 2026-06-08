@@ -858,10 +858,16 @@ function calcTotalCredit(mr, d) {
   if(qrBanks.length >= 2) conflicts.push({type:'银联码流水', banks: qrBanks});
   if(cfBanks.length >= 2) conflicts.push({type:'对公流水', banks: cfBanks});
 
+  const top2Banks = banks.slice(0, 2);
+  const backupBanks = banks.slice(2);
+  const recommendTotal = top2Banks.reduce((s,b)=>s+b.amt, 0);
   return {
     total: Math.round(total),
+    recommendTotal: Math.round(recommendTotal),
+    top2Banks,
+    backupBanks,
     singleMax: Math.round(singleMax),
-    extra: Math.round(total - singleMax),
+    extra: Math.round(recommendTotal - singleMax),
     banks,
     conflicts
   };
@@ -1478,21 +1484,22 @@ function renderResultFused(d, r) {
   // ═══ 总授信(做大单) - 金色高亮卡片 ═══
   const mr = r._matchResult || {canDo:[],canTry:[]};
   const tc = calcTotalCredit(mr, d);
-  if(tc && tc.total>0 && tc.banks.length>0){
+  if(tc && tc.recommendTotal>0 && tc.top2Banks.length>0){
     const bankIcons=['🏦','🏛️','💳','🏧'];
-    h += `<div class="card card-gold" style="text-align:center">
-      <div style="font-size:12px;color:var(--gold2);letter-spacing:1px;margin-bottom:6px">💰 ${d.企业名称||'这个客户'}预估总授信</div>
-      <div style="font-size:38px;font-weight:800;background:var(--goldg);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px">${tc.total} 万</div>
-      <div style="background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.2);border-radius:12px;padding:12px;margin-bottom:10px">
-        <div style="font-size:11px;color:var(--sub);margin-bottom:8px;text-align:left">分银行授信（可叠加）</div>
-        ${tc.banks.map((b,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;${i<tc.banks.length-1?'border-bottom:1px solid rgba(255,255,255,.06)':''}"><span>${bankIcons[i%4]}</span><span style="flex:1;text-align:left;font-size:13px;color:var(--text)">${b.bank}</span><span style="font-size:14px;font-weight:700;color:var(--gold2)">${b.amt}万</span></div>`).join('')}
+    h += `<div class="card card-gold">
+      <div style="text-align:center">
+        <div style="font-size:12px;color:var(--gold2);letter-spacing:1px;margin-bottom:6px">💰 ${d.企业名称||'该客户'}建议融资额度</div>
+        <div style="font-size:38px;font-weight:800;background:var(--goldg);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px">${tc.recommendTotal} 万</div>
+        <div style="font-size:11px;color:var(--sub);margin-bottom:14px">建议优先申请以下2家（实操最佳）</div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:${tc.conflicts.length?'10px':'0'}">
-        <div style="flex:1;background:rgba(255,255,255,.04);border-radius:10px;padding:10px"><div style="font-size:10px;color:var(--sub)">单做最高</div><div style="font-size:17px;font-weight:700;color:var(--text)">${tc.singleMax}万</div></div>
-        <div style="flex:1;background:rgba(200,168,75,.12);border:1px solid rgba(200,168,75,.3);border-radius:10px;padding:10px"><div style="font-size:10px;color:var(--gold2)">组合多做</div><div style="font-size:17px;font-weight:700;color:var(--gold3)">+${tc.extra}万 💡</div></div>
+      <div style="background:rgba(200,168,75,.1);border:1px solid rgba(200,168,75,.3);border-radius:12px;padding:12px;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--gold2);margin-bottom:8px;font-weight:600">⭐ 优先申请</div>
+        ${tc.top2Banks.map((b,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;${i<tc.top2Banks.length-1?'border-bottom:1px solid rgba(255,255,255,.08)':''}"><span>${bankIcons[i%4]}</span><span style="flex:1;text-align:left;font-size:13px;color:var(--text)">${b.bank}</span><span style="font-size:14px;font-weight:700;color:var(--gold3)">${b.amt}万</span></div>`).join('')}
       </div>
-      ${tc.conflicts.length?`<div style="background:rgba(240,80,96,.12);border:1px solid rgba(240,80,96,.3);border-radius:10px;padding:10px;font-size:12px;color:#f0a0a0;line-height:1.6;text-align:left">⚡ <strong>关键提示：</strong>${tc.conflicts.map(c=>`${c.banks.join('、')}都依赖${c.type}，<strong>必须同时进件</strong>，否则后做的会被减额！`).join('<br>')}</div>`:''}
-      <div style="font-size:10px;color:var(--sub2);margin-top:10px">实际额度以银行批复为准</div>
+      ${tc.backupBanks.length?`<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px;margin-bottom:10px"><div style="font-size:11px;color:var(--sub);margin-bottom:8px">备选银行（前2家放款后可考虑）</div>${tc.backupBanks.map((b,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0"><span style="opacity:.6">${bankIcons[(i+2)%4]}</span><span style="flex:1;text-align:left;font-size:12px;color:var(--sub)">${b.bank}</span><span style="font-size:13px;color:var(--sub)">${b.amt}万</span></div>`).join('')}</div>`:''}
+      <div style="background:rgba(96,144,255,.1);border:1px solid rgba(96,144,255,.3);border-radius:10px;padding:10px;font-size:12px;color:#90b0f0;line-height:1.6">💡 <b>实操建议：</b>同时申请控制在2家以内最稳妥。申请太多家，银行看到征信新增负债和查询记录反而会收紧或拒贷。建议先做这2家，放款后再考虑备选。</div>
+      ${tc.conflicts.length?`<div style="background:rgba(254,178,178,.12);border:1px solid rgba(254,178,178,.3);border-radius:10px;padding:10px;font-size:12px;color:#f0a0a0;line-height:1.6;margin-top:10px">⚡ <b>关键提示：</b>${tc.conflicts.map(c=>`${c.banks.slice(0,2).join('、')}都依赖${c.type}，<b>必须同时进件</b>，否则后做的会被减额！`).join('<br>')}</div>`:''}
+      <div style="font-size:10px;color:var(--sub2);margin-top:10px;text-align:center">实际额度以银行批复为准</div>
     </div>`;
   }
 
@@ -1627,7 +1634,8 @@ function renderResultFused(d, r) {
   }
 
   // 操作按钮
-  h += `<div style="display:flex;gap:8px;margin-top:14px">
+  h += `<button class="btn-g" style="width:100%;margin-top:14px;padding:13px;font-size:15px" onclick="exportClientReport()">📄 导出客户报告</button>
+  <div style="display:flex;gap:8px;margin-top:10px">
     <button class="btn-o" style="flex:1" onclick="saveCaseFromResultFused()">📚 存为案例</button>
     <button class="btn-o" style="flex:1" onclick="closeResult()">← 返回修改</button>
   </div><div style="height:20px"></div>`;
@@ -1959,7 +1967,7 @@ async function loadProductsFromCloud(){
   return 0;
 }
 
-function initPRODS(){ if(typeof PRODUCT_DB!=='undefined'){ PRODS=PRODUCT_DB.map(p=>({name:p.name,bank:p.bank,type:p.type,tag:p.tag||'',rate:p.rateL+'%-'+p.rateH+'%',amt:p.maxAmt+'万',channel:p.channel||''})); } }
+function initPRODS(){ if(typeof PRODUCT_DB!=='undefined'){ PRODS=PRODUCT_DB.map(p=>({...p,tag:p.tag||'',channel:p.channel||'',rateMin:p.rateL,rateMax:p.rateH})); } }
 
 window.addEventListener('load',()=>{
   initPRODS();
@@ -2206,11 +2214,42 @@ async function renderDevStat(){
 // 复制专属链接
 function copyMyLink(){
   const c=JSON.parse(localStorage.getItem('rzt_contact')||'{}');
-  let link=DEPLOY_URL;
-  if(c.refCode)link+='?ref='+c.refCode;
+  if(!c.name){toast('请先在下方填写并保存您的顾问名片');return;}
+  // 没有专属码就自动生成一个并保存
+  if(!c.refCode){
+    c.refCode=genMyRefCode();
+    localStorage.setItem('rzt_contact',JSON.stringify(c));
+  }
+  let link=DEPLOY_URL+'?ref='+c.refCode;
   const text=`【融资通】免费AI智能融资分析，快速匹配最合适的银行贷款产品。\n${link}`;
-  if(navigator.clipboard)navigator.clipboard.writeText(text).then(()=>toast('✅ 已复制链接'));
-  else prompt('复制:',text);
+  // 多重兜底复制
+  let copied=false;
+  try{
+    if(navigator.clipboard&&window.isSecureContext){
+      navigator.clipboard.writeText(text).then(()=>toast('✅ 链接已复制，去微信粘贴发送')).catch(()=>showCopyBox(text));
+      copied=true;
+    }
+  }catch(e){}
+  if(!copied){
+    // 老办法:用textarea选中复制
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      const ok=document.execCommand('copy');
+      document.body.removeChild(ta);
+      if(ok)toast('✅ 链接已复制，去微信粘贴发送');
+      else showCopyBox(text);
+    }catch(e){showCopyBox(text);}
+  }
+}
+function genMyRefCode(){const ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<6;i++)s+=ch[Math.floor(Math.random()*ch.length)];return s;}
+// 复制失败时,弹框让用户手动长按复制
+function showCopyBox(text){
+  const mask=document.createElement('div');
+  mask.className='modal-mask';
+  mask.innerHTML=`<div class="modal-box" style="max-width:420px"><div class="modal-hd"><span>📋 长按下方文字复制</span><span class="modal-x" onclick="this.closest('.modal-mask').remove()">×</span></div><div class="modal-bd"><div style="background:rgba(255,255,255,.05);border:1px solid rgba(200,168,75,.3);border-radius:10px;padding:14px;font-size:13px;color:var(--text);line-height:1.7;word-break:break-all;user-select:all;-webkit-user-select:all">${text}</div><div style="font-size:12px;color:var(--sub);margin-top:10px;line-height:1.6">长按上面的文字 → 全选 → 复制，然后发给客户</div></div></div>`;
+  document.body.appendChild(mask);
 }
 
 
@@ -2266,6 +2305,265 @@ window.addEventListener('load',()=>{
     },3000);
   }
 });
+
+
+// ════════════════════════════════════════
+// 导出客户融资分析报告(专业排版,给客户看)
+// ════════════════════════════════════════
+function exportClientReport(){
+  if(!window._lastAnalysis){toast('请先完成一次分析');return;}
+  const {d, result, ai} = window._lastAnalysis;
+  const contact = JSON.parse(localStorage.getItem('rzt_contact')||'{}');
+  const mr = result._matchResult || {canDo:[],canTry:[]};
+  const tc = calcTotalCredit(mr, d);
+
+  const today = new Date();
+  const dateStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+
+  // 融资可行性等级(基于评分,但用客户友好的说法)
+  const score = result.avgRisk || 0;
+  let feasibility, fColor;
+  if(score>=70){feasibility='优良';fColor='#1a9c5b';}
+  else if(score>=55){feasibility='良好';fColor='#2b8a3e';}
+  else if(score>=40){feasibility='中等';fColor='#d97706';}
+  else {feasibility='待优化';fColor='#dc6803';}
+
+  // 总授信(用"最高")
+  const totalCredit = tc ? tc.recommendTotal : 0;
+
+  // 推荐产品(只取可做的,给客户看)
+  const canDoP = (result.topProducts||[]).filter(p=>p.category==='canDo');
+  const showProds = canDoP.length ? canDoP : (result.topProducts||[]).slice(0,3);
+
+  // 额度显示成范围(±20%)
+  function amtRange(amt){
+    if(!amt||amt<=0) return '综合评估';
+    const low = Math.round(amt*0.8);
+    const high = Math.round(amt*1.1);
+    return low+'–'+high+'万';
+  }
+
+  // 银行授信卡片
+  let bankRows = '';
+  if(tc && tc.top2Banks && tc.top2Banks.length){
+    bankRows = tc.top2Banks.map(b=>`<div class="bank-row"><span class="bank-check">✓</span><span class="bank-name">${b.bank}</span><span class="bank-amt">最高 ${Math.round(b.amt*1.1)}万</span></div>`).join('');
+  }
+
+  // 产品方案
+  let prodCards = '';
+  showProds.forEach((p,i)=>{
+    const apIdx = i;
+    const ap = (ai.products||[])[apIdx] || {};
+    // 给客户的推荐理由:用why,但去掉内部话术
+    let reason = ap.why || '资质匹配，符合该产品申请条件';
+    // 清理掉可能暴露内部判断的词
+    reason = reason.replace(/通过率\d+%?/g,'').replace(/线下可沟通|可操作空间|刷码/g,'');
+    prodCards += `
+    <div class="prod-block">
+      <div class="prod-head">
+        <span class="prod-no">方案${['一','二','三','四'][i]||(i+1)}</span>
+        <span class="prod-title">${p.bank} · ${p.name}</span>
+      </div>
+      <div class="prod-rows">
+        <div class="prow"><span class="pcheck">✓</span>预计额度：<b>${amtRange(p.estAmt)}</b></div>
+        <div class="prow"><span class="pcheck">✓</span>参考年化：<b>${p.rateL}% 起</b></div>
+        <div class="prow"><span class="pcheck">✓</span>贷款期限：<b>${p.term}个月</b></div>
+        <div class="prow"><span class="pcheck">✓</span>适合原因：${reason}</div>
+      </div>
+    </div>`;
+  });
+
+  // 后续建议(从ai.advice提炼,客户友好)
+  let suggestion = ai.advisor_summary || ai.advice || '根据您的企业资质，我们已为您匹配最适合的融资方案，将协助您完成全程申请，提高获批效率。';
+  suggestion = suggestion.replace(/通过率\d+%?/g,'').replace(/话术|刷码|线下可沟通/g,'');
+
+  // 企业优势分析
+  let advList = [];
+  const _qr=parseFloat(d.月均银联收款码流水万)||0, _cf=parseFloat(d.月均对公流水万)||0;
+  const _tax=parseFloat(d.年纳税额万)||0, _years=parseFloat(d.成立年限)||0;
+  if(_qr>=10||_cf>=20) advList.push('经营流水稳定，月均流水规模可观，是银行重点青睐的优质客群');
+  if(_tax>=5) advList.push('纳税记录良好，税务数据是银行授信的核心加分项');
+  if(_years>=3) advList.push('企业经营年限较长，经营稳定性强，符合多数银行准入门槛');
+  if(d.纳税等级==='A'||d.纳税等级==='B') advList.push('纳税信用等级优秀，可申请税务专属高额产品');
+  if((d.抵押情况||'').indexOf('房产')>=0) advList.push('拥有可抵押资产，可申请额度更高的抵押类产品');
+  if((d.法人征信||'').indexOf('良好')>=0) advList.push('法人征信良好，无不良记录，审批通过率高');
+  if(advList.length===0) advList.push('我们将根据您的实际情况，量身匹配最适合的融资方案');
+  const advHTML = advList.map(a=>`<div class="adv-item"><span class="adv-icon">✓</span>${a}</div>`).join('');
+
+  const reportHTML = `<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>融资分析报告 - ${d.企业名称||'企业'}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#1a1a2e;padding:0;font-size:14px;line-height:1.6}
+.report{max-width:720px;margin:0 auto;background:#fff}
+.r-head{background:linear-gradient(135deg,#1a365d,#2b6cb0);color:#fff;padding:28px 24px;text-align:center}
+.r-head h1{font-size:22px;font-weight:800;letter-spacing:1px;margin-bottom:6px}
+.r-head .sub{font-size:12px;opacity:.85}
+.r-feasibility{display:flex;justify-content:center;gap:30px;padding:24px;background:#f8fafc;border-bottom:1px solid #e8edf3}
+.feas-item{text-align:center}
+.feas-label{font-size:12px;color:#888;margin-bottom:6px}
+.feas-value{font-size:26px;font-weight:800}
+.r-section{padding:22px 24px;border-bottom:8px solid #f0f2f5}
+.sec-title{font-size:16px;font-weight:700;color:#1a365d;margin-bottom:14px;padding-left:12px;border-left:4px solid #2b6cb0;display:flex;align-items:center}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.info-item{font-size:13px}
+.info-item .lbl{color:#999;margin-right:6px}
+.info-item .val{color:#1a1a2e;font-weight:600}
+.credit-box{text-align:center;padding:24px;background:linear-gradient(135deg,#ebf8ff,#f0f9ff);border-radius:14px;margin-bottom:16px}
+.credit-label{font-size:13px;color:#2b6cb0;margin-bottom:6px}
+.credit-num{font-size:38px;font-weight:800;color:#1a365d}
+.credit-num .unit{font-size:18px}
+.bank-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#f8fafc;border-radius:10px;margin-bottom:8px}
+.bank-check{color:#1a9c5b;font-weight:700;font-size:16px}
+.bank-name{flex:1;font-weight:600;font-size:14px}
+.bank-amt{color:#2b6cb0;font-weight:700;font-size:15px}
+.prod-block{border:1px solid #e8edf3;border-radius:12px;padding:16px;margin-bottom:14px;background:#fff}
+.prod-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px dashed #e8edf3}
+.prod-no{background:linear-gradient(135deg,#1a365d,#2b6cb0);color:#fff;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap}
+.prod-title{font-size:15px;font-weight:700;color:#1a1a2e}
+.prow{font-size:13px;color:#444;margin-bottom:7px;display:flex;align-items:flex-start;gap:7px;line-height:1.7}
+.pcheck{color:#1a9c5b;font-weight:700;flex-shrink:0}
+.prow b{color:#1a365d;font-weight:700}
+.suggest-box{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px;font-size:13px;color:#92400e;line-height:1.8}
+.r-contact{background:linear-gradient(135deg,#1a365d,#2b6cb0);color:#fff;padding:24px;text-align:center}
+.r-contact .ct-title{font-size:13px;opacity:.8;margin-bottom:10px}
+.r-contact .ct-name{font-size:20px;font-weight:800;margin-bottom:6px}
+.r-contact .ct-info{font-size:14px;opacity:.95;line-height:1.9}
+.disclaimer{padding:16px 24px;font-size:11px;color:#999;line-height:1.7;text-align:center;background:#f8fafc}
+.r-footer{text-align:center;padding:14px;font-size:11px;color:#bbb;background:#fff}
+.advantage-list{display:flex;flex-direction:column;gap:10px}
+.adv-item{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#444;line-height:1.6;background:#f0f9f4;border-radius:8px;padding:11px 14px}
+.adv-icon{color:#1a9c5b;font-weight:700;flex-shrink:0}
+.material-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mat-item{font-size:13px;color:#444;background:#f8fafc;border-radius:8px;padding:11px 12px}
+.flow-steps{display:flex;flex-direction:column;gap:12px}
+.flow-step{display:flex;align-items:center;gap:12px}
+.flow-no{width:32px;height:32px;background:linear-gradient(135deg,#1a365d,#2b6cb0);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.flow-txt{font-size:13px;color:#444;line-height:1.5}
+.why-list{display:flex;flex-direction:column;gap:14px}
+.why-item{display:flex;gap:12px;align-items:flex-start}
+.why-icon{font-size:24px;flex-shrink:0}
+.why-txt{font-size:13px;color:#5a4a2a;line-height:1.7}
+.why-txt b{color:#92400e;font-size:14px}
+@media print{body{background:#fff}.report{box-shadow:none}}
+</style></head>
+<body><div class="report">
+  <div class="r-head">
+    <h1>融资分析报告</h1>
+    <div class="sub">生成时间：${dateStr} ｜ 智能融资评估</div>
+  </div>
+
+  <div class="r-feasibility">
+    <div class="feas-item">
+      <div class="feas-label">融资可行性</div>
+      <div class="feas-value" style="color:${fColor}">${feasibility}</div>
+    </div>
+    <div class="feas-item">
+      <div class="feas-label">预估总授信</div>
+      <div class="feas-value" style="color:#1a365d">最高${Math.round(totalCredit*1.1)}<span style="font-size:16px">万</span></div>
+    </div>
+  </div>
+
+  <div class="r-section">
+    <div class="sec-title">企业概况</div>
+    <div class="info-grid">
+      <div class="info-item"><span class="lbl">企业名称</span><span class="val">${d.企业名称||'—'}</span></div>
+      <div class="info-item"><span class="lbl">所属行业</span><span class="val">${d.行业||'—'}</span></div>
+      <div class="info-item"><span class="lbl">企业类型</span><span class="val">${d.企业类型||'—'}</span></div>
+      <div class="info-item"><span class="lbl">经营年限</span><span class="val">${d.成立年限||'—'}年</span></div>
+      <div class="info-item"><span class="lbl">融资需求</span><span class="val">${d.需求金额万||'—'}万</span></div>
+      <div class="info-item"><span class="lbl">所在地区</span><span class="val">${d.地区||'重庆'}</span></div>
+    </div>
+  </div>
+
+  <div class="r-section">
+    <div class="sec-title">融资能力分析</div>
+    <div class="credit-box">
+      <div class="credit-label">💰 预估可获融资额度</div>
+      <div class="credit-num">最高 ${Math.round(totalCredit*1.1)}<span class="unit">万</span></div>
+    </div>
+    ${bankRows?'<div style="font-size:13px;color:#666;margin-bottom:10px">可申请银行（额度可叠加）：</div>'+bankRows:''}
+  </div>
+
+  <div class="r-section">
+    <div class="sec-title">推荐融资方案</div>
+    ${prodCards||'<div style="color:#999;font-size:13px">暂无匹配方案，建议联系顾问详细评估</div>'}
+  </div>
+
+  <div class="r-section">
+    <div class="sec-title">后续建议</div>
+    <div class="suggest-box">${suggestion}</div>
+  </div>
+
+  <div class="r-section">
+    <div class="sec-title">企业融资优势</div>
+    <div class="advantage-list">${advHTML}</div>
+  </div>
+
+  <div class="r-section">
+    <div class="sec-title">所需材料清单</div>
+    <div class="material-grid">
+      <div class="mat-item">📋 营业执照（正副本）</div>
+      <div class="mat-item">🆔 法人身份证</div>
+      <div class="mat-item">📊 近6-12个月银行流水</div>
+      <div class="mat-item">🧾 纳税证明 / 完税凭证</div>
+      <div class="mat-item">🏢 经营场所证明</div>
+      <div class="mat-item">📁 银行要求的其他材料</div>
+    </div>
+    <div style="font-size:12px;color:#999;margin-top:10px">* 具体材料以所申请银行要求为准，顾问将全程协助准备</div>
+  </div>
+
+  <div class="r-section">
+    <div class="sec-title">办理流程</div>
+    <div class="flow-steps">
+      <div class="flow-step"><div class="flow-no">1</div><div class="flow-txt"><b>资质评估</b><br>免费评估，确定最优方案</div></div>
+      <div class="flow-step"><div class="flow-no">2</div><div class="flow-txt"><b>准备材料</b><br>协助整理全部申请资料</div></div>
+      <div class="flow-step"><div class="flow-no">3</div><div class="flow-txt"><b>递交申请</b><br>对接银行，递交进件</div></div>
+      <div class="flow-step"><div class="flow-no">4</div><div class="flow-txt"><b>审批放款</b><br>跟进进度，高效放款</div></div>
+    </div>
+  </div>
+
+  <div class="r-section" style="background:linear-gradient(135deg,#fffbeb,#fff8f0)">
+    <div class="sec-title">为什么选择我们</div>
+    <div class="why-list">
+      <div class="why-item"><div class="why-icon">🎯</div><div class="why-txt"><b>精准匹配，不走弯路</b><br>覆盖重庆主流银行上百款融资产品，智能匹配最适合您的方案，避免盲目申请、反复被拒拉低征信。</div></div>
+      <div class="why-item"><div class="why-icon">💰</div><div class="why-txt"><b>额度最大化</b><br>专业测算多家银行组合授信，帮您拿到比自己单独申请更高的总额度。</div></div>
+      <div class="why-item"><div class="why-icon">⚡</div><div class="why-txt"><b>高效省心，全程协办</b><br>从材料准备到银行对接全程协助，专业人做专业事，省时省力。</div></div>
+      <div class="why-item"><div class="why-icon">🛡️</div><div class="why-txt"><b>规避风险，保护征信</b><br>合理规划申请节奏，避免多头申请、查询过多导致的风控拒贷。</div></div>
+      <div class="why-item"><div class="why-icon">🤝</div><div class="why-txt"><b>资源对接，成功率高</b><br>熟悉银行最新政策和审批偏好，显著提升获批成功率。</div></div>
+    </div>
+  </div>
+
+  <div class="r-contact">
+    <div class="ct-title">您的专属融资顾问</div>
+    <div class="ct-name">${contact.name||'融资顾问'}</div>
+    <div class="ct-info">
+      ${contact.phone?'📱 '+contact.phone+'<br>':''}
+      ${contact.wechat?'💬 微信：'+contact.wechat+'<br>':''}
+      ${contact.company?'🏢 '+contact.company:''}
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    免责声明：本报告为基于您提供信息的初步融资分析，仅供参考。最终可贷额度、利率及审批结果以银行实际审批为准。本报告不构成任何融资承诺或担保。
+  </div>
+  <div class="r-footer">融资通 · 智能融资分析 ｜ ${dateStr}</div>
+</div></body></html>`;
+
+  // 下载
+  const blob = new Blob([reportHTML], {type:'text/html;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '融资分析报告_'+(d.企业名称||'企业')+'_'+dateStr+'.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  toast('✅ 报告已生成');
+}
 
 </script>
 </body>
