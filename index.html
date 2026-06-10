@@ -2797,8 +2797,8 @@ let _authToken = null;
 let _authUser = null;  // {id, phone/email}
 let _agentProfile = null;
 
-// 用手机号注册(Supabase用email格式,我们用 手机号@rzt2026.com 包装)
-function phoneToEmail(phone){ return phone.trim()+'@rzt2026.com'; }
+// 用手机号注册(Supabase用email格式,我们用 手机号@gmail.com 包装)
+function phoneToEmail(phone){ return phone.trim()+'@gmail.com'; }
 
 async function authSignUp(phone, password, name){
   const email = phoneToEmail(phone);
