@@ -610,7 +610,7 @@ circle.arc{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dasho
 <script>
 const DS_KEY='sk-aaddb538ad6c46c3a4cd54dbaafe60ec';
 // DeepSeek中转地址(部署Cloudflare Worker后填这里,填了key就不再暴露;为空则直连)
-const DS_PROXY='';
+const DS_PROXY='https://financing-analyst.jhh895822.workers.dev';
 const DEV_PASSWORD='yangkun168';
 const SUPABASE_URL='https://kfrdvqvrlmvrqetzwmqv.supabase.co';
 const SUPABASE_KEY='sb_publishable_9NOtFR4Zf4U4DaMss139zw_PVTok9ft';
@@ -1096,18 +1096,27 @@ ${ms}
 7. 如果征信"花"(查询多):推荐查询不敏感的产品,建议养征信3-6个月
 8. 如果有"当前逾期/连三累六/呆账":明确告知暂不符合银行准入,在wait_plan里给出具体恢复路径(结清后多久、需要养多久征信才能重新申请)`;
 
-  const _dsUrl=DS_PROXY?DS_PROXY:'https://api.deepseek.com/chat/completions';
-  const _dsHeaders=DS_PROXY?{'Content-Type':'application/json'}:{'Content-Type':'application/json','Authorization':'Bearer '+DS_KEY};
-  const res=await fetch(_dsUrl,{
-    method:'POST',
-    headers:_dsHeaders,
-    body:JSON.stringify({model:'deepseek-chat',max_tokens:4000,temperature:0.1,
+  const _body=JSON.stringify({model:'deepseek-chat',max_tokens:4000,temperature:0.1,
       messages:[
         {role:'system',content:'只输出JSON，不使用markdown代码块，不输出任何其他内容。'},
         {role:'user',content:prompt}
       ]
-    })
-  });
+    });
+  async function _tryFetch(url,withKey){
+    return await fetch(url,{method:'POST',headers:withKey?{'Content-Type':'application/json','Authorization':'Bearer '+DS_KEY}:{'Content-Type':'application/json'},body:_body});
+  }
+  let res;
+  if(DS_PROXY){
+    try{
+      res=await _tryFetch(DS_PROXY,false);
+      if(!res.ok)throw new Error('proxy '+res.status);
+    }catch(e){
+      // 中转不通(国内workers.dev偶发),自动回退直连,保证分析不中断
+      res=await _tryFetch('https://api.deepseek.com/chat/completions',true);
+    }
+  }else{
+    res=await _tryFetch('https://api.deepseek.com/chat/completions',true);
+  }
   if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+res.status);}
   const json=await res.json();
   if(json.error)throw new Error(json.error.message);
@@ -2443,7 +2452,15 @@ function copyMyLink(){
     c.refCode=genMyRefCode();
     localStorage.setItem('rzt_contact',JSON.stringify(c));
   }
-  let link=DEPLOY_URL+'?ref='+c.refCode;
+  // 优先用云端账号的专属码(注册时生成的)
+  if(typeof _agentProfile!=='undefined'&&_agentProfile&&_agentProfile.ref_code){c.refCode=_agentProfile.ref_code;localStorage.setItem('rzt_contact',JSON.stringify(c));}
+  // 名片直接编进链接:客户打开瞬间显示,不依赖云端查询
+  let cardParam='';
+  try{
+    const cardObj={n:c.name||'',t:c.title||'',co:c.company||'',p:c.phone||'',w:c.wechat||'',a:c.area||''};
+    cardParam='&c='+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(cardObj)))));
+  }catch(e){}
+  let link=DEPLOY_URL+'?ref='+c.refCode+cardParam;
   const text=`【融资通】免费AI智能融资分析，快速匹配最合适的银行贷款产品。\n${link}`;
   // 多重兜底复制
   let copied=false;
@@ -3022,6 +3039,12 @@ async function doAuth(){
 
 // 登录成功后:加载该中介的云端数据
 async function onLoginSuccess(){
+  // 自愈:账号存在但云端资料缺失(如建表前注册的),自动补建
+  if(!_agentProfile&&_authUser){
+    const localC=JSON.parse(localStorage.getItem('rzt_contact')||'{}');
+    const ph=(_authUser.email||'').split('@')[0];
+    await createAgentProfile(ph, localC.name||'');
+  }
   // 同步名片到本地(供报告等使用)
   if(_agentProfile){
     const c = {
@@ -3109,7 +3132,17 @@ let _isClientMode = false;
 let _boundBroker = null; // 绑定的中介名片
 
 function detectClientMode(){
-  const ref = new URLSearchParams(location.search).get('ref');
+  const params = new URLSearchParams(location.search);
+  const ref = params.get('ref');
+  // 链接里带的名片(秒显,不等云端)
+  const cp = params.get('c');
+  if(cp){
+    try{
+      const o=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(cp)))));
+      const card={name:o.n||'',title:o.t||'',company:o.co||'',phone:o.p||'',wechat:o.w||'',area:o.a||'',intro:''};
+      localStorage.setItem('rzt_bound_card',JSON.stringify(card));
+    }catch(e){}
+  }
   if(ref){
     localStorage.setItem('rzt_role','client');
     localStorage.setItem('rzt_bound_ref',ref);
@@ -3143,15 +3176,31 @@ function enterClientMode(){
 
 // 按ref_code匿名拉取中介名片
 async function loadBrokerCard(){
+  // 第一优先:链接里带的名片(秒显)
+  try{
+    const cached=JSON.parse(localStorage.getItem('rzt_bound_card')||'null');
+    if(cached&&cached.name){_boundBroker=cached;renderClientAdvisorPage();}
+  }catch(e){}
   const ref = localStorage.getItem('rzt_bound_ref')||_activeRefCode;
   if(!ref) return;
+  // 第二优先:云端agents表(最新资料,查到覆盖)
   try{
     const r = await sbFetch('agents?ref_code=eq.'+encodeURIComponent(ref)+'&select=name,title,company,phone,wechat,area,intro');
-    if(r && r.length){
+    if(r && r.length && r[0].name){
       _boundBroker = r[0];
+      localStorage.setItem('rzt_bound_card',JSON.stringify(r[0]));
+      renderClientAdvisorPage();
+      return;
+    }
+  }catch(e){ console.log('agents查询失败',e); }
+  // 兜底:旧brokers表
+  try{
+    const r2 = await sbFetch('brokers?ref_code=eq.'+encodeURIComponent(ref)+'&select=name,phone');
+    if(r2 && r2.length && !_boundBroker){
+      _boundBroker = {name:r2[0].name,phone:r2[0].phone};
       renderClientAdvisorPage();
     }
-  }catch(e){ console.log('拉取顾问名片失败',e); }
+  }catch(e){}
 }
 
 // 客户视图的顾问页:只显示绑定中介的名片
