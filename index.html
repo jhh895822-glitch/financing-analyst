@@ -353,6 +353,28 @@ circle.arc{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dasho
       <div class="h-sub">智能评估 · 精准匹配最优融资方案</div>
     </div>
 
+    <!-- 快速分析通道 -->
+    <div class="card" style="border-color:rgba(200,168,75,.35)">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleQuick()">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">⚡</span><span style="font-size:15px;font-weight:700;color:var(--gold2)">快速分析</span><span style="font-size:11px;color:var(--sub)">30秒粗测,适合电话/微信沟通时</span></div>
+        <span id="quickArrow" style="color:var(--sub);font-size:13px">▼</span>
+      </div>
+      <div id="quickPanel" style="display:none;margin-top:14px">
+        <div class="flds">
+          <div class="fld"><label class="flbl">企业类型 <span class="req">*</span></label>
+            <select class="fsel" id="q_type"><option value="">请选择</option><option>个体工商户</option><option>有限公司</option></select></div>
+          <div class="fld"><label class="flbl">所属行业 <span class="req">*</span></label><input class="fi" id="q_industry" placeholder="如:餐饮/贸易/制造"></div>
+          <div class="fld"><label class="flbl">法人征信 <span class="req">*</span></label>
+            <select class="fsel" id="q_credit"><option value="">请选择</option><option>征信良好，无逾期</option><option>有少量逾期已结清（1-2次）</option><option>征信白户（无信贷记录）</option><option>征信花（查询多但无逾期）</option><option>有当前逾期/连三累六/呆账等</option></select></div>
+          <div class="fld"><label class="flbl">月均收款码流水(万)</label><input class="fi" id="q_qr" type="number" placeholder="没有填0"></div>
+          <div class="fld"><label class="flbl">年纳税额(万)</label><input class="fi" id="q_tax" type="number" placeholder="没有填0"></div>
+          <div class="fld"><label class="flbl">需求金额(万) <span class="req">*</span></label><input class="fi" id="q_need" type="number" placeholder="0"></div>
+        </div>
+        <button class="btn-g" style="width:100%;margin-top:12px" onclick="quickAnalyze()">⚡ 快速测算</button>
+        <div style="font-size:10px;color:var(--sub2);margin-top:8px;text-align:center">粗略测算仅供初步参考,完整填写下方资料可获精确方案</div>
+      </div>
+    </div>
+
     <!-- 01 企业基本信息 -->
     <div class="card">
       <div class="sh"><div class="sh-n">01</div><span class="sh-t">企业基本信息</span></div>
@@ -514,6 +536,10 @@ circle.arc{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dasho
       <div style="font-size:12px;color:var(--sub);line-height:1.7;margin-bottom:8px">把工具分享给客户，客户打开自动绑定你为顾问</div>
       <button class="btn-o" onclick="copyMyLink()">📋 复制我的专属链接</button>
     </div>
+    <!-- 退出登录 -->
+    <div style="padding:10px 0">
+      <button class="btn-o" onclick="if(confirm('确认退出登录?'))authSignOut()" style="width:100%;color:#f05060;border-color:rgba(240,80,96,.3)">退出登录</button>
+    </div>
     <!-- 开发者入口(隐藏) -->
     <div style="text-align:center;padding:20px 0">
       <span id="devEntry" onclick="devTap()" style="font-size:11px;color:var(--sub2);cursor:pointer">融资通 v2.0</span>
@@ -576,13 +602,15 @@ circle.arc{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dasho
   <div class="ni on" id="ni-form" onclick="goTab('form')"><div class="ni-ico">📊</div><div class="ni-lbl">分析</div></div>
   <div class="ni" id="ni-cases" onclick="goTab('cases')"><div class="ni-ico">📁</div><div class="ni-lbl">案例库</div></div>
   <div class="ni" id="ni-prods" onclick="goTab('prods')"><div class="ni-ico">🏦</div><div class="ni-lbl">产品库</div></div>
-  <div class="ni" id="ni-hist" onclick="goTab('hist')"><div class="ni-ico">🕐</div><div class="ni-lbl">历史</div></div>
+  <div class="ni" id="ni-hist" onclick="goTab('hist')"><div class="ni-ico">📋</div><div class="ni-lbl">客户</div></div>
   <div class="ni" id="ni-contact" onclick="goTab('contact')"><div class="ni-ico">👤</div><div class="ni-lbl">顾问</div></div>
 </nav>
 
 
 <script>
 const DS_KEY='sk-aaddb538ad6c46c3a4cd54dbaafe60ec';
+// DeepSeek中转地址(部署Cloudflare Worker后填这里,填了key就不再暴露;为空则直连)
+const DS_PROXY='';
 const DEV_PASSWORD='yangkun168';
 const SUPABASE_URL='https://kfrdvqvrlmvrqetzwmqv.supabase.co';
 const SUPABASE_KEY='sb_publishable_9NOtFR4Zf4U4DaMss139zw_PVTok9ft';
@@ -636,7 +664,7 @@ async function sbUpdate(table, query, data) { return sbFetch(table + '?' + query
 
 
 // ══ 产品库占位符 ══
-let PRODUCT_DB=[{"id":"P_CCB_001","name":"信用快贷","bank":"建设银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.0,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"no333Years":2,"maxQuery3m":4},"debtReq":{"ratio":0.7},"tag":"建行存量客户","note":"建行惠懂你系列；全线上申请；最快1分钟放款","rawFormula":"基于建行金融资产（AUM值）授信","excludeMortgageFromDebt":true},{"id":"P_CCB_002","name":"云税贷","bank":"建设银行","type":"税贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.5,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.5,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":{"type":"TAX","rateA":15,"rateB":10,"rateM":8,"rateDef":8,"desc":"年纳税×(A:15/B:10/M:8)倍-负债"},"creditReq":{"minYears":2,"needTaxGrade":["A","B","M"]},"debtReq":{"ratio":0.7},"tag":"以税授信","note":"惠懂你系列；需开建行对公户并开通企业网银","rawFormula":"年纳税×8-15倍；可叠加发票提额","excludeMortgageFromDebt":true},{"id":"P_CCB_003","name":"首户快贷","bank":"建设银行","type":"信用贷","maxAmt":100.0,"minAmt":1.0,"rateL":3.4,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"noCurrentOverdue":true,"no333Years":2},"debtReq":{"ratio":0.7},"tag":"新企业专属","note":"惠懂你系列；新企业门槛极低","rawFormula":"成立≥6个月，首次银行融资","excludeMortgageFromDebt":true},{"id":"P_CCB_004","name":"商户云贷","bank":"建设银行","type":"流水贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.3,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["个体户"],"formula":{"type":"QR","rate":0.3,"desc":"银联码月均流水×12×30%-负债"},"creditReq":{"noCurrentOverdue":true,"no333Years":2,"maxQuery3m":6},"debtReq":{"ratio":0.85},"tag":"银联/微信/支付宝流水","note":"惠懂你系列；收款码流水≥6个月；个体户最优","rawFormula":"银联码流水×30%-负债；支持微信/支付宝授权","excludeMortgageFromDebt":true},{"id":"P_CCB_005","name":"商叶云贷（烟草贷）","bank":"建设银行","type":"专项贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.05,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"烟草零售","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"noCurrentOverdue":true,"no333Years":2,"needSpecialCert":"tobacco"},"debtReq":{"ratio":0.7},"tag":"烟草商户","note":"惠懂你系列；烟草扣缴≥12个月；无档位要求","rawFormula":"烟草证+扣缴流水×授信系数"},{"id":"P_CCB_006","name":"结算云贷","bank":"建设银行","type":"流水贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.2,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"CF","rate":0.25,"desc":"对公月均流水×12×25%-负债"},"creditReq":{"needSettlement":true},"debtReq":{"ratio":0.7},"tag":"建行结算客户","note":"惠懂你系列；建行结算账户≥1年","rawFormula":"对公/对私结算流水×授信系数","excludeMortgageFromDebt":true},{"id":"P_CCB_007","name":"云电贷","bank":"建设银行","type":"信用贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.1,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":null,"creditReq":{"needSpecialCert":"electricity"},"debtReq":{"ratio":0.7},"tag":"用电企业","note":"惠懂你系列；分两笔发放（线上+线下）","rawFormula":"用电数据×授信系数","excludeMortgageFromDebt":true},{"id":"P_CCB_008","name":"个体经营快贷","bank":"建设银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.0,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["个体户"],"formula":null,"creditReq":{"minYears":1},"debtReq":{"ratio":0.7},"tag":"个体户专享","note":"惠懂你系列；个体工商户专属","rawFormula":"建行账户≥1年；50万以下直放法人私卡","excludeMortgageFromDebt":true},{"id":"P_CCB_009","name":"铁路运输贷","bank":"建设银行","type":"供应链金融","maxAmt":200.0,"minAmt":1.0,"rateL":3.6,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"铁路运输相关","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":null,"creditReq":{"needSpecialCert":"railway"},"debtReq":{"ratio":0.7},"tag":"运输企业","note":"2026新增；适配四大行拒贷运输企业","rawFormula":"铁路货运数据授信"},{"id":"P_CCB_010","name":"善科贷/善新贷","bank":"建设银行","type":"科技贷","maxAmt":1000.0,"minAmt":10.0,"rateL":2.8,"rateH":4.0,"term":60,"repay":"先息后本/随借随还","industry":"科技制造","minTax":0.0,"minInv":0.0,"channel":"线上预审+线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术"},"debtReq":{"ratio":0.7},"tag":"科创企业","note":"惠懂你系列；期限最长5年；专精特新专属绿色通道","rawFormula":"科技实力/知识价值授信；贴息后2.8%起"},{"id":"P_CCB_011","name":"抵押快贷","bank":"建设银行","type":"抵押贷","maxAmt":3000.0,"minAmt":10.0,"rateL":3.05,"rateH":4.5,"term":36,"repay":"先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":{"type":"ASSET","rate":0.7,"desc":"房产评估值×70%-负债"},"creditReq":{"noCurrentOverdue":true},"debtReq":{"ratio":0.8},"tag":"房产抵押","note":"建行惠懂你体系内；最长3年；支持住宅/商铺/写字楼/厂房","rawFormula":"住宅评估值×70%；商铺写字楼×50%"},{"id":"P_CCB_012","name":"裕农快贷","bank":"建设银行","type":"涉农贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.35,"rateH":6.0,"term":60,"repay":"先息后本/随借随还","industry":"农业/农村户籍","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["农户","合作社"],"formula":null,"creditReq":{"needSpecialCert":"agriculture"},"debtReq":{"ratio":0.85},"tag":"乡村振兴","note":"建行乡村振兴核心产品；2026年升级；期限最长5年","rawFormula":"农险/补贴数据授信；贴息后最低2.5%"},{"id":"P_ABC_001","name":"纳税e贷","bank":"农业银行","type":"税贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.1,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":1.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":{"type":"TAX","rateA":9,"rateB":8,"rateM":6,"rateDef":6,"desc":"年纳税×(A:9/B:8/M:6)倍-负债"},"creditReq":{"no333Years":2,"minYears":2,"needTaxGrade":["A","B","M"]},"debtReq":{"ratio":0.85,"maxOrgs":2},"tag":"以税定贷","note":"农行微捷贷系列；微信搜索“普惠e站”小程序申请","rawFormula":"年纳税×倍数；A级纳税企业利率可低至2.45%","excludeMortgageFromDebt":true},{"id":"P_ABC_002","name":"商户e贷","bank":"农业银行","type":"流水贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.1,"rateH":4.5,"term":36,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["个体户"],"formula":{"type":"QR","rate":0.3,"desc":"银联码月均流水×12×30%-负债"},"creditReq":{"noCurrentOverdue":true,"no333Years":2,"maxQuery3m":8},"debtReq":{"ratio":0.85},"tag":"银联/农行收款码","note":"农行惠农e贷系列；营业执照满1-2年，银联码连续使用6个月以上","rawFormula":"收款码流水×30%-负债；优质商户可达1000万","excludeMortgageFromDebt":true},{"id":"P_ABC_003","name":"微捷贷3.0","bank":"农业银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.3,"rateH":4.5,"term":12,"repay":"随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"noSeriousOverdue":true},"debtReq":{"ratio":0.7},"tag":"全线上普惠","note":"农行线上普惠核心产品","rawFormula":"综合经营数据授信","excludeMortgageFromDebt":true},{"id":"P_ABC_004","name":"流水e贷","bank":"农业银行","type":"流水贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.65,"rateH":4.15,"term":36,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"CF","rate":0.25,"desc":"对公月均流水×12×25%-负债"},"creditReq":{"noCurrentOverdue":true,"no333Years":2},"debtReq":{"ratio":0.85,"maxOrgs":2},"tag":"轻征信重流水","note":"专精特新企业可提额至1000万","rawFormula":"对公账户月均流水×倍数；年开票≥20万或年度流水≥300万","excludeMortgageFromDebt":true},{"id":"P_ABC_006","name":"渝惠e贷","bank":"农业银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":4.5,"term":12,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"minYears":1},"debtReq":{"ratio":0.7},"tag":"重庆专属","note":"农行重庆市分行区域特色产品","rawFormula":"纳税数据授信","excludeMortgageFromDebt":true},{"id":"P_ABC_007","name":"科创企业绿色通道","bank":"农业银行","type":"科技贷","maxAmt":1000.0,"minAmt":10.0,"rateL":2.6,"rateH":3.85,"term":60,"repay":"先息后本","industry":"科技制造","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术"},"debtReq":{"ratio":0.7},"tag":"专精特新","note":"农行专精特新小巨人贷最高3000万","rawFormula":"知识价值/研发投入授信；贴息后利率更优"},{"id":"P_ABC_008","name":"链捷贷","bank":"农业银行","type":"供应链金融","maxAmt":3000.0,"minAmt":10.0,"rateL":2.8,"rateH":4.5,"term":12,"repay":"按月付息到期还本/等额本息","industry":"制造贸易物流","minTax":0.0,"minInv":0.0,"channel":"线上预审+线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":{"type":"AR","rate":0.8,"desc":"应收账款×80%"},"creditReq":{"noSeriousOverdue":true,"needSpecialCert":"supply_chain"},"debtReq":{"ratio":0.85},"tag":"供应链","note":"2026年利率2.8%起；单户最高1000-3000万","rawFormula":"应收账款×80%或订单数据授信"},{"id":"P_ICBC_001","name":"经营快贷","bank":"工商银行","type":"信用贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.0,"rateH":5.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下增信","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"noCurrentOverdue":true,"no333Years":2,"maxQuery3m":15},"debtReq":{"ratio":0.7},"tag":"工银普惠首选","note":"≤50万纯线上直批；支持微信/支付宝流水授权","rawFormula":"五大通道：结算/税务/商户/资产/泛交易链","excludeMortgageFromDebt":true},{"id":"P_ICBC_002","name":"e抵快贷","bank":"工商银行","type":"抵押贷","maxAmt":1000.0,"minAmt":10.0,"rateL":3.2,"rateH":4.5,"term":120,"repay":"先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线上申请+线下抵押","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":{"type":"ASSET","rate":0.7,"desc":"房产评估值×70%-负债"},"creditReq":{},"debtReq":{"ratio":0.8},"tag":"房产抵押线上化","note":"合同最长10年，单笔最长3年；住宅/商铺/写字楼均可","rawFormula":"住宅评估值×70%；支持二抵"},{"id":"P_ICBC_003","name":"e企快贷","bank":"工商银行","type":"抵押贷","maxAmt":3000.0,"minAmt":10.0,"rateL":3.0,"rateH":4.8,"term":60,"repay":"先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下抵押","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.8},"tag":"大额抵押","note":"额度更高，线下评估签约","rawFormula":"住宅/商铺/工业厂房均可抵押"},{"id":"P_ICBC_004","name":"科创贷/兴科贷","bank":"工商银行","type":"科技贷","maxAmt":1000.0,"minAmt":10.0,"rateL":2.6,"rateH":3.1,"term":36,"repay":"先息后本","industry":"科技制造","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术"},"debtReq":{"ratio":0.7},"tag":"专精特新","note":"支持无还本续贷；可叠加政府贴息","rawFormula":"专利/研发/知识价值授信；最高可至3000万"},{"id":"P_ICBC_005","name":"制造e贷","bank":"工商银行","type":"信用贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.5,"rateH":4.5,"term":12,"repay":"先息后本","industry":"制造业","minTax":0.0,"minInv":0.0,"channel":"线上申请","isOnline":false,"offlineSpace":"medium","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"制造业专项","note":"聚焦制造业，纯信用快速测额","rawFormula":"设备采购/原材料/生产周转","excludeMortgageFromDebt":true},{"id":"P_ICBC_006","name":"工银玺链","bank":"工商银行","type":"供应链金融","maxAmt":3000.0,"minAmt":10.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"随销售回款","industry":"制造贸易物流","minTax":0.0,"minInv":0.0,"channel":"线上","isOnline":false,"offlineSpace":"medium","entity":["有限公司"],"formula":{"type":"AR","rate":0.8,"desc":"应收账款×80%"},"creditReq":{"noSeriousOverdue":true,"needSpecialCert":"supply_chain"},"debtReq":{"ratio":0.85},"tag":"供应链","note":"无需线下签约；全线上操作","rawFormula":"应收账款×80%或核心企业信用穿透"},{"id":"P_ICBC_007","name":"跨境快贷·出口贷","bank":"工商银行","type":"贸易贷","maxAmt":300.0,"minAmt":1.0,"rateL":4.0,"rateH":5.2,"term":12,"repay":"先息后本","industry":"外贸/新能源出口","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":null,"creditReq":{"needSpecialCert":"foreign_trade"},"debtReq":{"ratio":0.7},"tag":"出口企业","note":"面向外贸出口企业","rawFormula":"报关单/订单/结汇数据授信"},{"id":"P_ICBC_008","name":"税务贷","bank":"工商银行","type":"税贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.1,"rateH":4.1,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":5.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":{"type":"TAX","rateA":9,"rateB":8,"rateM":6,"rateDef":6,"desc":"年纳税×(A:9/B:8/M:6)倍-负债"},"creditReq":{"no333Years":2,"needTaxGrade":["A","B","M"]},"debtReq":{"ratio":0.7},"tag":"以税定贷","note":"工行经营快贷核心子产品；纳税通道权重占比40%","rawFormula":"年纳税×倍数；纳税A级可低至2.68%-2.75%","excludeMortgageFromDebt":true},{"id":"P_ICBC_009","name":"结算贷","bank":"工商银行","type":"流水贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.65,"rateH":4.35,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"工行结算客户","note":"工行经营快贷子产品；以行内结算流水为核心授信依据","rawFormula":"工行流水×授信系数","excludeMortgageFromDebt":true},{"id":"P_CQRCB_001","name":"小微企业便捷贷","bank":"重庆农商行","type":"综合贷","maxAmt":2000.0,"minAmt":10.0,"rateL":3.5,"rateH":5.0,"term":36,"repay":"先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"额度循环","note":"渝农商行拳头产品","rawFormula":"综合评估，一次授信循环支用","excludeMortgageFromDebt":true},{"id":"P_CQRCB_002","name":"个人助业贷款","bank":"重庆农商行","type":"经营贷","maxAmt":1000.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":120,"repay":"先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"手机银行自助","isOnline":false,"offlineSpace":"medium","entity":["个体户","自然人"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"循环支用","note":"最长10年，手机银行办理","rawFormula":"一次授信，循环支用"},{"id":"P_CQRCB_003","name":"税易贷","bank":"重庆农商行","type":"税贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":24,"repay":"先息后本","industry":"全行业","minTax":5.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":{"type":"TAX","rateA":9,"rateB":8,"rateM":6,"rateDef":6,"desc":"年纳税×(A:9/B:8/M:6)倍-负债"},"creditReq":{},"debtReq":{"ratio":0.7},"tag":"以税定贷","note":"纯信用无抵押","rawFormula":"年纳税×倍数","excludeMortgageFromDebt":true},{"id":"P_CQRCB_004","name":"小微增信贷","bank":"重庆农商行","type":"增信贷","maxAmt":1000.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":60,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"银政合作","note":"个人最高500万，企业最高1000万","rawFormula":"政府推荐函增信"},{"id":"P_CQRCB_005","name":"创业担保贷","bank":"重庆农商行","type":"政策性贷","maxAmt":600.0,"minAmt":1.0,"rateL":2.0,"rateH":3.0,"term":36,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"政府贴息","note":"个人最高50万，企业最高600万；期限36/24个月","rawFormula":"贴息50%，担保费补贴"},{"id":"P_CQRCB_006","name":"专精特新专项贷","bank":"重庆农商行","type":"科技贷","maxAmt":5000.0,"minAmt":10.0,"rateL":3.5,"rateH":5.0,"term":36,"repay":"先息后本","industry":"科技制造","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术"},"debtReq":{"ratio":0.7},"tag":"专精特新","note":"额度高、方式多、云签约可续贷","rawFormula":"知识价值/研发授信"},{"id":"P_CQRCB_007","name":"个人经营性房快贷","bank":"重庆农商行","type":"抵押贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.5,"rateH":5.0,"term":120,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线上申请+线上抵押","isOnline":false,"offlineSpace":"medium","entity":["个体户","自然人"],"formula":{"type":"ASSET","rate":0.7,"desc":"房产评估值×70%-负债"},"creditReq":{},"debtReq":{"ratio":0.8},"tag":"房产抵押","note":"手机申请、远程评估、线上抵押","rawFormula":"住宅评估值×70%"},{"id":"P_CQRCB_008","name":"渝快振兴贷","bank":"重庆农商行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"餐饮/商超/医疗/农贸","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["个体户"],"formula":null,"creditReq":{"needSpecialCert":"chongqing_local"},"debtReq":{"ratio":0.85},"tag":"定制化","note":"在线申请，无需抵押","rawFormula":"专属白名单授信","excludeMortgageFromDebt":true},{"id":"P_CQRCB_009","name":"新质贷","bank":"重庆农商行","type":"信用贷","maxAmt":500,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"新质生产力企业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"新兴产业","note":"渝农商行创新产品","rawFormula":"创新产品，聚焦新兴产业","excludeMortgageFromDebt":true},{"id":"P_CQRCB_010","name":"设备更新贷","bank":"重庆农商行","type":"抵押贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.5,"rateH":5.0,"term":36,"repay":"先息后本","industry":"制造业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.8},"tag":"制造业","note":"支持设备更新和技术改造","rawFormula":"设备抵押或信用"},{"id":"P_CQRCB_011","name":"医保贷","bank":"重庆农商行","type":"信用贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"医疗医保定点","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needSettlement":true,"needSpecialCert":"medical_insurance"},"debtReq":{"ratio":0.7},"tag":"医保数据","note":"适合民营医院、药店","rawFormula":"医保结算数据授信","excludeMortgageFromDebt":true},{"id":"P_CQRCB_012","name":"富农贷","bank":"重庆农商行","type":"涉农贷","maxAmt":50.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":36,"repay":"先息后本/等额本息","industry":"农户/农业经营","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["农户"],"formula":null,"creditReq":{"needSpecialCert":"agriculture"},"debtReq":{"ratio":0.85},"tag":"乡村振兴","note":"面向农户信用贷款；涉农贷款余额超2600亿元","rawFormula":"信用/担保/抵押多种方式"},{"id":"P_CQRCB_013","name":"涪陵榨菜贷","bank":"重庆农商行","type":"涉农贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"榨菜产业链","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户","农户"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"一乡一品","note":"重庆农商行“一乡一品”特色产品；20余款标准化特色信贷产品之一","rawFormula":"产业链经营数据授信"},{"id":"P_CQRCB_014","name":"江津花椒贷","bank":"重庆农商行","type":"涉农贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"花椒产业链","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户","农户"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"一乡一品","note":"重庆农商行“一乡一品”特色产品","rawFormula":"产业链经营数据授信"},{"id":"P_CQRCB_015","name":"云阳面业贷","bank":"重庆农商行","type":"涉农贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"面业产业链","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户","农户"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"一乡一品","note":"重庆农商行“一乡一品”特色产品","rawFormula":"产业链经营数据授信"},{"id":"P_CQRCB_016","name":"巫山脆李贷","bank":"重庆农商行","type":"涉农贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"脆李产业链","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户","农户"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"一乡一品","note":"重庆农商行“一乡一品”特色产品","rawFormula":"产业链经营数据授信"},{"id":"P_CQRCB_017","name":"江渝上市贷","bank":"重庆农商行","type":"信用贷","maxAmt":5000.0,"minAmt":100.0,"rateL":3.5,"rateH":5.0,"term":36,"repay":"先息后本","industry":"拟上市/已上市企业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"上市企业","note":"重庆农商行创新产品；助力民营企业上市","rawFormula":"综合经营数据授信","excludeMortgageFromDebt":true},{"id":"P_CQB_001","name":"好企税信贷","bank":"重庆银行","type":"税贷","maxAmt":100.0,"minAmt":1.0,"rateL":9.0,"rateH":9.0,"term":12,"repay":"先息后本","industry":"全行业","minTax":0.5,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"以税定贷","note":"好企贷系列；重庆、四川、贵州、陕西四省区","rawFormula":"月利率0.75%（年化约9%）","excludeMortgageFromDebt":true},{"id":"P_CQB_002","name":"知识价值信用贷","bank":"重庆银行","type":"科技贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.0,"rateH":3.0,"term":12,"repay":"先息后本","industry":"科技型企业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"科技企业","note":"按LPR利率执行；科委评级体系","rawFormula":"知识价值评级授信"},{"id":"P_CQB_003","name":"商业价值信用贷","bank":"重庆银行","type":"信用贷","maxAmt":1000.0,"minAmt":10.0,"rateL":3.65,"rateH":4.3,"term":36,"repay":"先息后本","industry":"专精特新","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术"},"debtReq":{"ratio":0.7},"tag":"专精特新","note":"利率不超过一年期LPR+65bp","rawFormula":"额度从300万提至1000万","excludeMortgageFromDebt":true},{"id":"P_CQB_004","name":"优优贷","bank":"重庆银行","type":"抵押贷","maxAmt":3000.0,"minAmt":10.0,"rateL":3.5,"rateH":5.0,"term":36,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.8},"tag":"大额抵押","note":"材料简，额度高","rawFormula":"抵质押担保，审批快"},{"id":"P_CQB_005","name":"好企知产贷","bank":"重庆银行","type":"知识产权贷","maxAmt":1000.0,"minAmt":10.0,"rateL":3.0,"rateH":4.5,"term":36,"repay":"先息后本","industry":"科技型企业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"知产质押","note":"与科委合作","rawFormula":"评估值和保险费有补贴"},{"id":"P_CQB_006","name":"好企抵押贷","bank":"重庆银行","type":"抵押贷","maxAmt":1000.0,"minAmt":10.0,"rateL":4.0,"rateH":6.12,"term":60,"repay":"随借随还循环使用","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":{"type":"ASSET","rate":0.65,"desc":"资产评估值×65%-负债"},"creditReq":{},"debtReq":{"ratio":0.85},"tag":"房产抵押","note":"好企贷系列；最高额授信期限5年；循环额度","rawFormula":"住宅/商铺评估值×抵押率"},{"id":"P_CQB_007","name":"好企流水贷","bank":"重庆银行","type":"流水贷","maxAmt":300.0,"minAmt":1.0,"rateL":7.2,"rateH":7.2,"term":60,"repay":"随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"CF","rate":0.25,"desc":"对公月均流水×12×25%-负债"},"creditReq":{},"debtReq":{"ratio":0.7},"tag":"以流定贷","note":"好企贷系列；月利率低至0.6%；随借随还循环使用","rawFormula":"对公/对私流水×倍数","excludeMortgageFromDebt":true},{"id":"P_CQB_008","name":"普惠科企贷","bank":"重庆银行","type":"科技贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"科技型企业","minTax":0.0,"minInv":0.0,"channel":"线上线下结合","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"科技型企业"},"debtReq":{"ratio":0.85},"tag":"科技企业","note":"2026年普惠科企贷；支持专精特新/高新技术企业","rawFormula":"知识价值/科技资质授信"},{"id":"P_CQSX_001","name":"商户贷","bank":"三峡银行","type":"流水贷","maxAmt":100.0,"minAmt":1.0,"rateL":4.0,"rateH":6.0,"term":12,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"全线上秒批","note":"三峡惠贷系列；全市所有区县覆盖","rawFormula":"银联收款码流水授信","excludeMortgageFromDebt":true},{"id":"P_CQSX_002","name":"渝链贷","bank":"三峡银行","type":"供应链金融","maxAmt":500.0,"minAmt":10.0,"rateL":3.0,"rateH":5.0,"term":12,"repay":"随销售回款","industry":"链上中小微企业","minTax":0.0,"minInv":0.0,"channel":"线上","isOnline":false,"offlineSpace":"medium","entity":["有限公司"],"formula":null,"creditReq":{"noSeriousOverdue":true,"needSpecialCert":"supply_chain"},"debtReq":{"ratio":0.85},"tag":"供应链","note":"最快T+1放款","rawFormula":"隐私计算技术授信"},{"id":"P_CQSX_003","name":"新质贷","bank":"三峡银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"新质生产力","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"新兴产业","note":"创新产品","rawFormula":"精准匹配产业集群","excludeMortgageFromDebt":true},{"id":"P_CQSX_004","name":"科创贷","bank":"三峡银行","type":"科技贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本","industry":"科技型企业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"科技企业","note":"降低融资门槛","rawFormula":"纯信用线上产品"},{"id":"P_CQSX_005","name":"惠企贷","bank":"三峡银行","type":"综合贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.5,"rateH":5.5,"term":24,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"多元担保","note":"覆盖多元场景","rawFormula":"信用/抵押/质押均可","excludeMortgageFromDebt":true},{"id":"P_CQSX_007","name":"兔链贷","bank":"三峡银行","type":"涉农贷","maxAmt":100.0,"minAmt":1.0,"rateL":3.0,"rateH":3.0,"term":12,"repay":"先息后本","industry":"肉兔养殖","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["农户","合作社"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"产业链专项","note":"三峡银行乡村振兴产品；奉节肉兔产业链专项","rawFormula":"兔产业链经营数据授信"},{"id":"P_CQSX_008","name":"渝贷系列","bank":"三峡银行","type":"综合贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.0,"rateH":6.0,"term":36,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"needSpecialCert":"chongqing_local"},"debtReq":{"ratio":0.85},"tag":"区域特色","note":"三峡银行地方特色产品","rawFormula":"综合授信产品线","excludeMortgageFromDebt":true},{"id":"P_GUAR_001","name":"担保过渡贷","bank":"重庆担保公司","type":"过渡贷","maxAmt":200.0,"minAmt":1.0,"rateL":12.0,"rateH":18.0,"term":24,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"应急周转","note":"短期应急后转银行低息产品；利率远高于银行","rawFormula":"银行拒贷后过渡"},{"id":"P_GUAR_002","name":"创业担保贷（政策性）","bank":"重庆担保公司","type":"政策性贷","maxAmt":600.0,"minAmt":1.0,"rateL":2.0,"rateH":3.0,"term":36,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"政府贴息","note":"个人最高50万，企业最高600万；累计不超过3次","rawFormula":"财政给予50%贴息"},{"id":"P_GUAR_003","name":"小微担保贷","bank":"重庆小微担保","type":"担保贷","maxAmt":500.0,"minAmt":1.0,"rateL":4.0,"rateH":6.0,"term":24,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{"noSeriousOverdue":true},"debtReq":{"ratio":0.85},"tag":"政府性担保","note":"重庆小微担保（政府性）；担保费享受财政补贴","rawFormula":"担保公司增信后银行放款"},{"id":"P_OTHER_001","name":"房产二抵贷","bank":"多家银行","type":"抵押贷","maxAmt":1000.0,"minAmt":10.0,"rateL":4.0,"rateH":6.0,"term":36,"repay":"按月付息到期还本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":{"type":"ASSET","rate":0.7,"desc":"房产评估值×70%-负债"},"creditReq":{"noCurrentOverdue":true},"debtReq":{"ratio":0.85},"tag":"二次抵押","note":"重庆农商行等可办；评估周期2-3周","rawFormula":"评估值×70%-原贷款余额"},{"id":"P_OTHER_002","name":"政府贴息普惠贷","bank":"多家银行","type":"政策性贷","maxAmt":500.0,"minAmt":1.0,"rateL":1.5,"rateH":3.0,"term":36,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"政府贴息","note":"需提前申报，纳入“1+3+N”政策体系","rawFormula":"贷款利率-政府贴息（约1%-1.5%）"},{"id":"P_OTHER_003","name":"小额信用贷","bank":"多家银行","type":"信用贷","maxAmt":50.0,"minAmt":1.0,"rateL":6.0,"rateH":15.0,"term":24,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"新企业/无数据","note":"建行“首户快贷”最高50万；适合新开业客户","rawFormula":"无需任何抵押和流水","excludeMortgageFromDebt":true},{"id":"P_OTHER_004","name":"经营贷置换","bank":"多家银行","type":"置换贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.0,"rateH":4.5,"term":36,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"债务优化","note":"需证明资金用于经营；利率可降50%-70%","rawFormula":"将高息消费贷置换为低息经营贷"},{"id":"P_FUB_001","name":"富税贷","bank":"富民银行","type":"税贷","maxAmt":300.0,"minAmt":1.0,"rateL":7.2,"rateH":24.0,"term":24,"repay":"等额本金/随借随还/先息后本","industry":"全行业","minTax":5.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"TAX","rateA":8,"rateB":7,"rateM":6,"rateDef":5,"desc":"年纳税×(A:8/B:7/M:6)倍-负债"},"creditReq":{},"debtReq":{"ratio":0.85},"tag":"民营银行","note":"民营银行；2026年通过率提升25%，件均50万；重庆本土民营银行","rawFormula":"年缴税额×5-8倍；部分贴息后低至1.775%","excludeMortgageFromDebt":true},{"id":"P_FUB_002","name":"富业贷","bank":"富民银行","type":"供应链金融","maxAmt":300.0,"minAmt":1.0,"rateL":12.0,"rateH":18.0,"term":24,"repay":"随借随还/按日计息","industry":"全行业","minTax":0.0,"minInv":100.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"票据链","note":"支持随借随还、按日计息；以企业债项为授信基础","rawFormula":"企业纳税/发票/承兑汇票授信"},{"id":"P_CF_001","name":"安逸花经营版","bank":"马上消费金融","type":"消费贷","maxAmt":20.0,"minAmt":1.0,"rateL":7.2,"rateH":24.0,"term":24,"repay":"等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["自然人"],"formula":null,"creditReq":{"noSeriousOverdue":true},"debtReq":{"ratio":0.85},"tag":"应急周转","note":"持牌消费金融公司产品；自动审批率达98%","rawFormula":"个人信用评估授信"},{"id":"P_CF_002","name":"新市民创业贷","bank":"马上消费金融","type":"信用贷","maxAmt":20.0,"minAmt":1.0,"rateL":7.2,"rateH":24.0,"term":24,"repay":"等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["自然人"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"新市民专享","note":"2026年4月新品；面向新市民创业群体","rawFormula":"个人信用+创业计划授信","excludeMortgageFromDebt":true},{"id":"P_BOC_001","name":"创业担保贷","bank":"中国银行","type":"政策性贷","maxAmt":600.0,"minAmt":1.0,"rateL":1.5,"rateH":3.0,"term":36,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"政府贴息","note":"中国银行重庆市分行；与38个区县就业部门联动，全域覆盖","rawFormula":"财政贴息50%"},{"id":"P_BOC_002","name":"中银E贷","bank":"中国银行","type":"消费贷","maxAmt":30.0,"minAmt":1.0,"rateL":3.4,"rateH":4.5,"term":60,"repay":"等额本息/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["自然人"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"个人消费","note":"额度上限提升至30万；还款期限延长至5年","rawFormula":"个人信用评估授信"},{"id":"P_BOC_003","name":"随心智贷","bank":"中国银行","type":"消费贷","maxAmt":50.0,"minAmt":1.0,"rateL":3.4,"rateH":4.5,"term":60,"repay":"等额本息/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["自然人"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"个人消费","note":"额度上限提升至50万；还款期限延长至5年","rawFormula":"个人信用评估授信"},{"id":"P_BOC_004","name":"惠如愿·创担贷","bank":"中国银行","type":"政策性贷","maxAmt":600.0,"minAmt":1.0,"rateL":1.5,"rateH":3.0,"term":36,"repay":"按月付息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"政府贴息","note":"中国银行惠如愿系列；银担同步审查高效审批","rawFormula":"政府贴息50%+担保费补贴；招聘员工可提额"},{"id":"P_BOC_005","name":"惠如愿·小微外贸贷","bank":"中国银行","type":"贸易贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.0,"rateH":5.0,"term":12,"repay":"先息后本/随借随还","industry":"外贸出口","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":null,"creditReq":{"needSpecialCert":"foreign_trade"},"debtReq":{"ratio":0.85},"tag":"外贸专享","note":"“信贷工厂”高效审批；发改委/中信保重点客群可享更低利率","rawFormula":"近12个月收汇额+中行结算量挂钩授信"},{"id":"P_BOC_006","name":"惠如愿·新质生产力贷","bank":"中国银行","type":"科技贷","maxAmt":1000.0,"minAmt":10.0,"rateL":2.35,"rateH":3.5,"term":36,"repay":"先息后本","industry":"新质生产力","minTax":0.0,"minInv":0.0,"channel":"线上线下结合","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"新质生产力","note":"领券后LPR基础打7.9折，年化最低2.35%","rawFormula":"多维增信（纳税/厂房/投资/薪资）授信，最长3年，流动资金贷款"},{"id":"P_BOC_007","name":"科企梯度贷","bank":"中国银行","type":"科技贷","maxAmt":2000.0,"minAmt":10.0,"rateL":2.5,"rateH":4.0,"term":120,"repay":"按月付息","industry":"科技制造","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"政银担合作","note":"中国银行重庆高新分行+科学城担保；创新“政银担”产品","rawFormula":"按企业成长阶段梯度授信；科学城融资担保增信"},{"id":"P_COMM_001","name":"普惠e贷(企业版)","bank":"交通银行","type":"综合贷","maxAmt":1000.0,"minAmt":10.0,"rateL":3.0,"rateH":8.0,"term":24,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下增信","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85,"maxOrgs":3},"tag":"综合授信","note":"2026年全面升级；对制造业非常友好；审批反馈快","rawFormula":"综合纳税+流水+房产多维度授信；信用最高300万，抵押最高1000万","excludeMortgageFromDebt":true},{"id":"P_COMM_002","name":"税融通","bank":"交通银行","type":"税贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.0,"rateH":8.0,"term":24,"repay":"先息后本/随借随还","industry":"全行业","minTax":1.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"maxQuery3m":4,"needTaxGrade":["A","B"],"minTaxAmt":1.0},"debtReq":{"ratio":0.85,"maxOrgs":2},"tag":"以税定贷","note":"交通银行2026版；利率最低可至3.25%；先息后本，随借随还","rawFormula":"纳税数据授信；担保版最高500万，最长2年可循环提用","excludeMortgageFromDebt":true},{"id":"P_COMM_003","name":"惠商贷","bank":"交通银行","type":"信用贷","maxAmt":500.0,"minAmt":1.0,"rateL":2.88,"rateH":9.45,"term":36,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"个体户专享","note":"2026年；30万以下可自主支付；支持无本续贷咨询","rawFormula":"税务开票/银联流水/AUM/订烟数据多维度评估；分行可下浮30BP","excludeMortgageFromDebt":true},{"id":"P_COMM_004","name":"无还本续贷专项","bank":"交通银行","type":"信用贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.0,"rateH":8.0,"term":24,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线上线下结合","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"存量客户","note":"2026年贴息政策同步落地；降低融资成本","rawFormula":"存量客户续贷专项通道；符合条件可享2026财政部贴息","excludeMortgageFromDebt":true},{"id":"P_BOCOM_001","name":"线上税融通","bank":"交通银行","type":"税贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.25,"rateH":8.0,"term":24,"repay":"先息后本/随借随还","industry":"全行业","minTax":1.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"TAX","rateA":9,"rateB":8,"rateM":6,"rateDef":6,"desc":"年纳税×(A:9/B:8/M:6)倍-负债"},"creditReq":{"minYears":2,"needTaxGrade":["A","B"],"minTaxAmt":1.0},"debtReq":{"ratio":0.85,"maxOrgs":2},"tag":"以税定贷","note":"交行标准税贷产品；大行中利率较低","rawFormula":"年纳税×倍数；担保版最高500万","excludeMortgageFromDebt":true},{"id":"P_PAB_001","name":"平安税金贷","bank":"平安银行","type":"税贷","maxAmt":200.0,"minAmt":1.0,"rateL":4.0,"rateH":6.0,"term":12,"repay":"先息后本","industry":"全行业","minTax":3.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"TAX","rateA":9,"rateB":8,"rateM":6,"rateDef":6,"desc":"年纳税×(A:9/B:8/M:6)倍-负债"},"creditReq":{"needTaxGrade":["A","B","M"]},"debtReq":{"ratio":0.7},"tag":"以税定贷","note":"全国性银行；重庆分行可办","rawFormula":"年纳税×倍数","excludeMortgageFromDebt":true},{"id":"P_PAB_002","name":"平安数保贷","bank":"平安银行","type":"担保贷","maxAmt":300.0,"minAmt":1.0,"rateL":5.0,"rateH":7.0,"term":24,"repay":"先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"担保增信","note":"平安银行重庆分行；需担保公司介入","rawFormula":"银行+担保公司联合授信"},{"id":"P_PAB_003","name":"橙e贷","bank":"平安银行","type":"信用贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.0,"rateH":6.0,"term":36,"repay":"随借随还/先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"线上化经营","note":"平安银行重庆分行特色产品矩阵","rawFormula":"纯信用线上化经营贷","excludeMortgageFromDebt":true},{"id":"P_PAB_004","name":"橙业贷","bank":"平安银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.0,"rateH":6.0,"term":36,"repay":"随借随还/先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"经营贷","note":"覆盖小微经营贷、税金贷、抵押贷等多元场景","rawFormula":"小微经营贷产品","excludeMortgageFromDebt":true},{"id":"P_PAB_005","name":"国贸E融","bank":"平安银行","type":"贸易贷","maxAmt":700.0,"minAmt":10.0,"rateL":4.0,"rateH":6.0,"term":24,"repay":"随借随还","industry":"外贸出口/跨境电商","minTax":0.0,"minInv":0.0,"channel":"纯线上+实地调查","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":null,"creditReq":{"needSpecialCert":"foreign_trade"},"debtReq":{"ratio":0.85},"tag":"外贸专享","note":"全国普惠金融典型案例；最高700万纯信用授信；支持离岸账户搭建","rawFormula":"跨境贸易行为量化授信；KYB大数据风控；覆盖19类贸融及外汇衍生品"},{"id":"P_PAB_006","name":"科创贷","bank":"平安银行","type":"科技贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.0,"rateH":5.0,"term":36,"repay":"随借随还/先息后本","industry":"科技型企业","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术科技型企业"},"debtReq":{"ratio":0.85},"tag":"科创企业","note":"平安银行重庆分行；支持知识产权质押","rawFormula":"科技资质授信，纯信用无抵押"},{"id":"P_CIB_001","name":"科技企业研发贷","bank":"兴业银行","type":"科技贷","maxAmt":2000.0,"minAmt":10.0,"rateL":2.7,"rateH":3.5,"term":120,"repay":"按月付息","industry":"科技制造","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"科创专精","note":"兴业银行；30BP+50BP双重补贴；“技术流”评价模型","rawFormula":"研发投入×50%（流贷）+设备价款×70%（固贷）；双轨模式最长5年/10年"},{"id":"P_CIB_002","name":"科技成果转化贷","bank":"兴业银行","type":"科技贷","maxAmt":500.0,"minAmt":10.0,"rateL":2.7,"rateH":3.8,"term":60,"repay":"按月付息","industry":"科技制造","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"科创专精","note":"兴业银行特定科技金融场景专属产品","rawFormula":"技术成果价值评估授信"},{"id":"P_CIB_003","name":"人才贷","bank":"兴业银行","type":"信用贷","maxAmt":300.0,"minAmt":10.0,"rateL":3.0,"rateH":4.0,"term":36,"repay":"按月付息","industry":"科技型企业","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"人才专享","note":"兴业银行初创期创业扶持产品","rawFormula":"人才资质授信纯信用","excludeMortgageFromDebt":true},{"id":"P_CIB_004","name":"创业扶持贷","bank":"兴业银行","type":"信用贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.0,"rateH":4.5,"term":36,"repay":"按月付息","industry":"科技初创","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"初创企业","note":"兴业银行初创期产品；创新积分贷主动对接","rawFormula":"创业综合评估授信纯信用","excludeMortgageFromDebt":true},{"id":"P_CIB_005","name":"兴速贷(贴息1%)","bank":"兴业银行","type":"信用贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.5,"rateH":5.5,"term":12,"repay":"随借随还","industry":"服务业经营主体","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"贴息专享","note":"2026年服务业经营主体贷款贴息政策","rawFormula":"综合经营数据授信；2026年享受1%贴息","excludeMortgageFromDebt":true},{"id":"P_CMB_008","name":"信用招企贷","bank":"招商银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"轻资产专享","note":"招行普惠核心产品；2025年累计投放5.7亿元，惠及422户","rawFormula":"大数据风控多元数据精准画像；申请即审批审批即放款","excludeMortgageFromDebt":true},{"id":"P_CMB_009","name":"抵押招捷贷","bank":"招商银行","type":"抵押贷","maxAmt":1000.0,"minAmt":10.0,"rateL":3.2,"rateH":4.5,"term":60,"repay":"先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线上申请+线上评估","isOnline":false,"offlineSpace":"medium","entity":["有限公司","个体户"],"formula":{"type":"ASSET","rate":0.7,"desc":"房产评估值×70%-负债"},"creditReq":{},"debtReq":{"ratio":0.85},"tag":"房产抵押","note":"招行；审批快成本低，资金最快当天到账；2025年累计投放0.64亿元","rawFormula":"住宅评估值×70%；线上评估线上放款"},{"id":"P_CMB_010","name":"政采贷","bank":"招商银行","type":"供应链金融","maxAmt":3000.0,"minAmt":10.0,"rateL":3.85,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"政府采购供应商","minTax":0.0,"minInv":0.0,"channel":"线上+线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"minYears":2,"needSpecialCert":"gov_procurement"},"debtReq":{"ratio":0.85,"maxOrgs":3},"tag":"政府采购","note":"招行；2025年累计投放2.14亿元，服务64户","rawFormula":"政府采购合同额×授信比例；政府采购网数据直连线上审批"},{"id":"P_CMB_011","name":"订货贷","bank":"招商银行","type":"供应链金融","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"随借随还/先息后本","industry":"核心企业下游经销商","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"needSpecialCert":"supply_chain"},"debtReq":{"ratio":0.85},"tag":"经销商专享","note":"招行2025年10月上线；累计授信1272万元","rawFormula":"采购额+合作年限授信；纯信用线上申请"},{"id":"P_CMB_012","name":"科创易贷","bank":"招商银行","type":"科技贷","maxAmt":300.0,"minAmt":10.0,"rateL":3.0,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"科技初创","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"科创专精","note":"招行科创贷产品体系；初创期专属","rawFormula":"科技资质/专利授信纯信用"},{"id":"P_CMB_013","name":"科创快贷","bank":"招商银行","type":"科技贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.0,"rateH":4.5,"term":24,"repay":"先息后本/随借随还","industry":"科技成长","minTax":0.0,"minInv":0.0,"channel":"线上线下结合","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"科创专精","note":"招行科创贷产品体系；成长期专属","rawFormula":"科技成长评估授信"},{"id":"P_CMB_014","name":"科创技改贷","bank":"招商银行","type":"科技贷","maxAmt":1000.0,"minAmt":10.0,"rateL":2.8,"rateH":4.0,"term":36,"repay":"按月付息","industry":"制造业技改","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"科技型企业"},"debtReq":{"ratio":0.85},"tag":"科创专精","note":"招行科创技改场景专属；支持设备采购升级","rawFormula":"技术改造投入评估授信"},{"id":"P_CMB_015","name":"科创人才贷","bank":"招商银行","type":"信用贷","maxAmt":300.0,"minAmt":10.0,"rateL":2.8,"rateH":4.0,"term":36,"repay":"按月付息","industry":"科技人才创办","minTax":0.0,"minInv":0.0,"channel":"线下尽调","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"人才专享","note":"招行激发高校人才活力的专属产品","rawFormula":"人才资质+研发能力授信","excludeMortgageFromDebt":true},{"id":"P_SPDB_001","name":"浦闪贷","bank":"浦发银行","type":"信用贷","maxAmt":100.0,"minAmt":1.0,"rateL":2.85,"rateH":5.0,"term":36,"repay":"随借随还/先息后本","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["自然人"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"个人信用","note":"浦发银行；2026年贴息政策叠加","rawFormula":"个人信用评估授信；优质客户可享利率优惠","excludeMortgageFromDebt":true},{"id":"P_SPDB_002","name":"浦惠e贷","bank":"浦发银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":6.0,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"普惠金融","note":"浦发银行重庆分行标准普惠产品","rawFormula":"综合经营数据授信","excludeMortgageFromDebt":true},{"id":"P_SPDB_003","name":"政采e贷","bank":"浦发银行","type":"供应链金融","maxAmt":500.0,"minAmt":10.0,"rateL":3.5,"rateH":5.5,"term":12,"repay":"先息后本/随借随还","industry":"政府采购供应商","minTax":0.0,"minInv":0.0,"channel":"线上+线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needSpecialCert":"gov_procurement"},"debtReq":{"ratio":0.7},"tag":"政府采购","note":"浦发银行线上化政采专项","rawFormula":"政府采购合同额授信"},{"id":"P_CEB_001","name":"阳光e微贷","bank":"光大银行","type":"信用贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":6.0,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"纯信用线上","note":"光大银行重庆分行普惠核心产品","rawFormula":"经营数据线上授信","excludeMortgageFromDebt":true},{"id":"P_CEB_002","name":"阳光e抵贷","bank":"光大银行","type":"抵押贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.2,"rateH":5.0,"term":36,"repay":"先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"线上申请+线上评估","isOnline":false,"offlineSpace":"medium","entity":["有限公司","个体户"],"formula":{"type":"ASSET","rate":0.65,"desc":"资产评估值×65%-负债"},"creditReq":{},"debtReq":{"ratio":0.85},"tag":"房产抵押","note":"光大银行线上化抵押产品","rawFormula":"住宅/商铺评估值×抵押率"},{"id":"P_CMBC_001","name":"民生小微贷","bank":"民生银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":6.0,"term":24,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"经营周转","note":"民生银行重庆分行普惠产品","rawFormula":"综合经营数据授信","excludeMortgageFromDebt":true},{"id":"P_CMBC_002","name":"民生纳税贷","bank":"民生银行","type":"税贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":6.0,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":1.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"TAX","rateA":10,"rateB":8,"rateM":6,"rateDef":5,"desc":"年纳税×(A:10/B:8/M:6)倍-负债"},"creditReq":{"needTaxGrade":["A","B"],"minTaxAmt":1.0},"debtReq":{"ratio":0.7},"tag":"以税定贷","note":"民生银行线上化税贷","rawFormula":"年纳税×5-10倍","excludeMortgageFromDebt":true},{"id":"P_CGB_001","name":"税银通","bank":"广发银行","type":"税贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":6.0,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":1.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"TAX","rateA":9,"rateB":8,"rateM":6,"rateDef":6,"desc":"年纳税×(A:9/B:8/M:6)倍-负债"},"creditReq":{"needTaxGrade":["A","B"],"minTaxAmt":1.0},"debtReq":{"ratio":0.7},"tag":"以税定贷","note":"广发银行重庆分行普惠产品","rawFormula":"年纳税×倍数","excludeMortgageFromDebt":true},{"id":"P_CGB_002","name":"小微E贷","bank":"广发银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":6.0,"term":24,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"纯信用线上","note":"广发银行普惠核心产品","rawFormula":"经营流水授信","excludeMortgageFromDebt":true},{"id":"P_HFB_001","name":"恒丰税贷","bank":"恒丰银行","type":"税贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.5,"rateH":6.0,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":1.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"TAX","rateA":9,"rateB":8,"rateM":6,"rateDef":6,"desc":"年纳税×(A:9/B:8/M:6)倍-负债"},"creditReq":{"needTaxGrade":["A","B"],"minTaxAmt":1.0},"debtReq":{"ratio":0.7},"tag":"以税定贷","note":"恒丰银行重庆分行普惠产品","rawFormula":"年纳税×倍数","excludeMortgageFromDebt":true},{"id":"P_HFB_002","name":"恒丰小微贷","bank":"恒丰银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":6.0,"term":24,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"普惠金融","note":"恒丰银行普惠核心产品","rawFormula":"综合经营数据授信","excludeMortgageFromDebt":true},{"id":"P_NYCB_001","name":"粤商贷系列","bank":"南粤银行","type":"综合贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":6.5,"term":24,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"区域特色","note":"南粤银行重庆分行普惠产品","rawFormula":"综合经营数据授信","excludeMortgageFromDebt":true},{"id":"P_HKB_001","name":"汉银小微贷系列","bank":"汉口银行","type":"综合贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":6.5,"term":24,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上+线下","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"区域特色","note":"汉口银行重庆分行普惠产品","rawFormula":"综合经营数据授信","excludeMortgageFromDebt":true},{"id":"P_PSBC_001","name":"小微易贷","bank":"邮储银行","type":"信用贷","maxAmt":500.0,"minAmt":1.0,"rateL":3.1,"rateH":6.0,"term":36,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{"noSeriousOverdue":true},"debtReq":{"ratio":0.85},"tag":"纯信用线上","note":"邮储“渝”系列核心产品；累计投放普惠小微贷款200亿元","rawFormula":"综合经营数据授信；最快3分钟授信当日放款","excludeMortgageFromDebt":true},{"id":"P_PSBC_002","name":"极速贷","bank":"邮储银行","type":"信用贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":6.5,"term":24,"repay":"先息后本/等额本息","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"全线上秒批","note":"邮储银行数字化拳头产品；全线上纯信用","rawFormula":"最快3分钟授信当日放款","excludeMortgageFromDebt":true},{"id":"P_PSBC_003","name":"科创信用贷","bank":"邮储银行","type":"科技贷","maxAmt":1000.0,"minAmt":10.0,"rateL":2.5,"rateH":4.0,"term":60,"repay":"先息后本","industry":"科技制造","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术"},"debtReq":{"ratio":0.7},"tag":"科创企业","note":"邮储“U益创”品牌；2025年为科技型企业提供资金约48.25亿元","rawFormula":"科技资质+经营综合数据授信；无抵押"},{"id":"P_PSBC_004","name":"花椒产业链贷","bank":"邮储银行","type":"涉农贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.0,"rateH":5.0,"term":24,"repay":"先息后本/随借随还","industry":"花椒产业链","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户","农户"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"一乡一品","note":"邮储“渝见希望”品牌；累计发放特色产业相关贷款超60亿元","rawFormula":"产业链经营数据授信"},{"id":"P_PSBC_005","name":"脆李产业链贷","bank":"邮储银行","type":"涉农贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.0,"rateH":5.0,"term":24,"repay":"先息后本/随借随还","industry":"脆李产业链","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户","农户"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"一乡一品","note":"邮储“渝见希望”品牌；覆盖40个产业链贷","rawFormula":"产业链经营数据授信"},{"id":"P_PSBC_006","name":"生猪养殖贷","bank":"邮储银行","type":"涉农贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.0,"rateH":5.0,"term":24,"repay":"先息后本/随借随还","industry":"生猪养殖","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["农户","合作社"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"三农专属","note":"邮储银行；累计发放相关贷款65亿元","rawFormula":"养殖数据授信，32个特色农业信用贷之一"},{"id":"P_PSBC_007","name":"柑橘产业链贷","bank":"邮储银行","type":"涉农贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.0,"rateH":5.0,"term":24,"repay":"先息后本/随借随还","industry":"柑橘种植","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户","农户"],"formula":null,"creditReq":{"needSpecialCert":"agri_chain"},"debtReq":{"ratio":0.85},"tag":"一乡一品","note":"邮储“渝见希望”品牌；“一品一策”精准滴灌","rawFormula":"产业链经营数据授信"},{"id":"P_PSBC_008","name":"U益创","bank":"邮储银行","type":"科技贷","maxAmt":2000.0,"minAmt":10.0,"rateL":2.8,"rateH":4.0,"term":120,"repay":"先息后本","industry":"科技企业","minTax":0.0,"minInv":0.0,"channel":"线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术"},"debtReq":{"ratio":0.7},"tag":"全周期科创","note":"邮储“邮益创”品牌；构建“股+债+贷+保”综合服务体系","rawFormula":"股权+债权+贷款+担保综合服务"},{"id":"P_CITIC_001","name":"信秒贷","bank":"中信银行","type":"信用贷","maxAmt":100.0,"minAmt":1.0,"rateL":3.5,"rateH":5.0,"term":12,"repay":"随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["自然人"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.7},"tag":"代发工资客户","note":"中信银行重庆分行；代发工资客户优先","rawFormula":"个人信用评估授信","excludeMortgageFromDebt":true},{"id":"P_CITIC_002","name":"科创e贷","bank":"中信银行","type":"科技贷","maxAmt":500.0,"minAmt":10.0,"rateL":3.0,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"科技型企业","minTax":0.0,"minInv":0.0,"channel":"线上+线下","isOnline":false,"offlineSpace":"large","entity":["有限公司"],"formula":null,"creditReq":{"needCert":"专精特新或高新技术"},"debtReq":{"ratio":0.7},"tag":"科创专享","note":"信秒贷补充；中信银行科创专项","rawFormula":"科技资质授信纯信用"},{"id":"P_CITIC_003","name":"有贷户周转贷","bank":"中信银行","type":"信用贷","maxAmt":300.0,"minAmt":10.0,"rateL":3.0,"rateH":4.5,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0.0,"minInv":0.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":null,"creditReq":{},"debtReq":{"ratio":0.85},"tag":"存量增额","note":"信秒贷补充；存量客户增贷专项","rawFormula":"存量贷款评估+经营综合数据授信","excludeMortgageFromDebt":true},{"id":"P_PSBC_INV1","name":"小微易贷-发票模式","bank":"邮储银行","type":"票据贷","maxAmt":300.0,"minAmt":1.0,"rateL":3.5,"rateH":5.4,"term":12,"repay":"随借随还/按日计息","industry":"全行业","minTax":0,"minInv":200.0,"channel":"线上+线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":{"type":"INV","rate":0.1,"desc":"年开票额×10%-负债"},"creditReq":{"noCurrentOverdue":true,"no333Years":2},"debtReq":{"ratio":0.85},"tag":"开票多/纳税少首选","note":"准入：开票≥200万或纳税≥1万；纯信用最高300万；线下可沟通提额；可叠加担保公司","rawFormula":"年开票额×10%-负债","excludeMortgageFromDebt":true},{"id":"P_PSBC_INV2","name":"票e贷","bank":"邮储银行","type":"票据贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.6,"rateH":5.0,"term":12,"repay":"随借随还","industry":"全行业","minTax":0,"minInv":100.0,"channel":"纯线上","isOnline":true,"offlineSpace":"small","entity":["有限公司","个体户"],"formula":{"type":"INV","rate":0.1,"desc":"年开票额×10%-负债"},"creditReq":{"noCurrentOverdue":true,"no333Years":2,"maxQuery3m":6},"debtReq":{"ratio":0.85},"tag":"线上开票贷","note":"线上纯信用，凭增值税发票授信，连续开票12个月以上更佳","rawFormula":"年开票额×10%-负债","excludeMortgageFromDebt":true},{"id":"P_CCB_INV","name":"发票贷","bank":"建设银行","type":"票据贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.45,"rateH":4.8,"term":12,"repay":"先息后本/随借随还","industry":"全行业","minTax":0,"minInv":100.0,"channel":"线上+线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":{"type":"INV","rate":0.1,"desc":"年开票额×10%-负债"},"creditReq":{"noCurrentOverdue":true,"no333Years":2},"debtReq":{"ratio":0.85},"tag":"建行开票授信","note":"惠懂你系列；以开票数据授信；线下可沟通提额","rawFormula":"年开票额×10%-负债","excludeMortgageFromDebt":true},{"id":"P_ABC_INV","name":"发票贷","bank":"农业银行","type":"票据贷","maxAmt":200.0,"minAmt":1.0,"rateL":3.45,"rateH":4.9,"term":12,"repay":"随借随还","industry":"全行业","minTax":0,"minInv":100.0,"channel":"线上+线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":{"type":"INV","rate":0.1,"desc":"年开票额×10%-负债"},"creditReq":{"noCurrentOverdue":true,"no333Years":2},"debtReq":{"ratio":0.85},"tag":"农行开票授信","note":"纳税e贷发票模式；开票多纳税少可做；线下空间大","rawFormula":"年开票额×10%-负债","excludeMortgageFromDebt":true},{"id":"P_CQRC_INV","name":"票据e贷","bank":"重庆农商行","type":"票据贷","maxAmt":150.0,"minAmt":1.0,"rateL":3.6,"rateH":5.2,"term":12,"repay":"随借随还/先息后本","industry":"全行业","minTax":0,"minInv":80.0,"channel":"线上+线下","isOnline":false,"offlineSpace":"large","entity":["有限公司","个体户"],"formula":{"type":"INV","rate":0.1,"desc":"年开票额×10%-负债"},"creditReq":{"noCurrentOverdue":true,"no333Years":2},"debtReq":{"ratio":0.85},"tag":"本地银行开票贷","note":"重庆本地银行，线下沟通灵活，开票数据授信","rawFormula":"年开票额×10%-负债","excludeMortgageFromDebt":true}];
+let PRODUCT_DB=[{"id": "P_CCB_001", "name": "信用快贷", "bank": "建设银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"no333Years": 2, "maxQuery3m": 4}, "debtReq": {"ratio": 0.7}, "tag": "建行存量客户", "note": "建行惠懂你系列；全线上申请；最快1分钟放款", "rawFormula": "基于建行金融资产（AUM值）授信", "excludeMortgageFromDebt": true}, {"id": "P_CCB_002", "name": "云税贷", "bank": "建设银行", "type": "税贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.5, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": {"type": "TAX", "rateA": 15, "rateB": 10, "rateM": 8, "rateDef": 8, "desc": "年纳税×(A:15/B:10/M:8)倍-负债"}, "creditReq": {"minYears": 2, "needTaxGrade": ["A", "B", "M"]}, "debtReq": {"ratio": 0.7}, "tag": "以税授信", "note": "惠懂你系列；需开建行对公户并开通企业网银", "rawFormula": "年纳税×8-15倍；可叠加发票提额", "excludeMortgageFromDebt": true}, {"id": "P_CCB_003", "name": "首户快贷", "bank": "建设银行", "type": "信用贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 3.4, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.7}, "tag": "新企业专属", "note": "惠懂你系列；新企业门槛极低", "rawFormula": "成立≥6个月，首次银行融资", "excludeMortgageFromDebt": true}, {"id": "P_CCB_004", "name": "商户云贷", "bank": "建设银行", "type": "流水贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.3, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["个体户"], "formula": {"type": "QR", "rate": 0.3, "desc": "银联码月均流水×12×30%-负债"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 6}, "debtReq": {"ratio": 0.85}, "tag": "银联/微信/支付宝流水", "note": "惠懂你系列；收款码流水≥6个月；个体户最优", "rawFormula": "银联码流水×30%-负债；支持微信/支付宝授权", "excludeMortgageFromDebt": true}, {"id": "P_CCB_005", "name": "商叶云贷（烟草贷）", "bank": "建设银行", "type": "专项贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.05, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "烟草零售", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "needSpecialCert": "tobacco"}, "debtReq": {"ratio": 0.7}, "tag": "烟草商户", "note": "惠懂你系列；烟草扣缴≥12个月；无档位要求", "rawFormula": "烟草证+扣缴流水×授信系数"}, {"id": "P_CCB_006", "name": "结算云贷", "bank": "建设银行", "type": "流水贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.2, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "CF", "rate": 0.25, "desc": "对公月均流水×12×25%-负债"}, "creditReq": {"needSettlement": true}, "debtReq": {"ratio": 0.7}, "tag": "建行结算客户", "note": "惠懂你系列；建行结算账户≥1年", "rawFormula": "对公/对私结算流水×授信系数", "excludeMortgageFromDebt": true}, {"id": "P_CCB_007", "name": "云电贷", "bank": "建设银行", "type": "信用贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.1, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": null, "creditReq": {"needSpecialCert": "electricity"}, "debtReq": {"ratio": 0.7}, "tag": "用电企业", "note": "惠懂你系列；分两笔发放（线上+线下）", "rawFormula": "用电数据×授信系数", "excludeMortgageFromDebt": true}, {"id": "P_CCB_008", "name": "个体经营快贷", "bank": "建设银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["个体户"], "formula": null, "creditReq": {"minYears": 1}, "debtReq": {"ratio": 0.7}, "tag": "个体户专享", "note": "惠懂你系列；个体工商户专属", "rawFormula": "建行账户≥1年；50万以下直放法人私卡", "excludeMortgageFromDebt": true}, {"id": "P_CCB_009", "name": "铁路运输贷", "bank": "建设银行", "type": "供应链金融", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.6, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "铁路运输相关", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": null, "creditReq": {"needSpecialCert": "railway"}, "debtReq": {"ratio": 0.7}, "tag": "运输企业", "note": "2026新增；适配四大行拒贷运输企业", "rawFormula": "铁路货运数据授信"}, {"id": "P_CCB_010", "name": "善科贷/善新贷", "bank": "建设银行", "type": "科技贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 2.8, "rateH": 4.0, "term": 60, "repay": "先息后本/随借随还", "industry": "科技制造", "minTax": 0.0, "minInv": 0.0, "channel": "线上预审+线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术"}, "debtReq": {"ratio": 0.7}, "tag": "科创企业", "note": "惠懂你系列；期限最长5年；专精特新专属绿色通道", "rawFormula": "科技实力/知识价值授信；贴息后2.8%起"}, {"id": "P_CCB_011", "name": "抵押快贷", "bank": "建设银行", "type": "抵押贷", "maxAmt": 3000.0, "minAmt": 10.0, "rateL": 3.05, "rateH": 4.5, "term": 36, "repay": "先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "ASSET", "rate": 0.7, "desc": "房产评估值×70%-负债"}, "creditReq": {"noCurrentOverdue": true}, "debtReq": {"ratio": 0.8}, "tag": "房产抵押", "note": "建行惠懂你体系内；最长3年；支持住宅/商铺/写字楼/厂房", "rawFormula": "住宅评估值×70%；商铺写字楼×50%"}, {"id": "P_CCB_012", "name": "裕农快贷", "bank": "建设银行", "type": "涉农贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.35, "rateH": 6.0, "term": 60, "repay": "先息后本/随借随还", "industry": "农业/农村户籍", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["农户", "合作社"], "formula": null, "creditReq": {"needSpecialCert": "agriculture"}, "debtReq": {"ratio": 0.85}, "tag": "乡村振兴", "note": "建行乡村振兴核心产品；2026年升级；期限最长5年", "rawFormula": "农险/补贴数据授信；贴息后最低2.5%"}, {"id": "P_ABC_001", "name": "纳税e贷", "bank": "农业银行", "type": "税贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.1, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 1.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": {"type": "TAX", "rateA": 9, "rateB": 8, "rateM": 6, "rateDef": 6, "desc": "年纳税×(A:9/B:8/M:6)倍-负债"}, "creditReq": {"no333Years": 2, "minYears": 2, "needTaxGrade": ["A", "B", "M"]}, "debtReq": {"ratio": 0.85, "maxOrgs": 2}, "tag": "以税定贷", "note": "农行微捷贷系列；微信搜索“普惠e站”小程序申请", "rawFormula": "年纳税×倍数；A级纳税企业利率可低至2.45%", "excludeMortgageFromDebt": true}, {"id": "P_ABC_002", "name": "商户e贷", "bank": "农业银行", "type": "流水贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.1, "rateH": 4.5, "term": 36, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["个体户"], "formula": {"type": "QR", "rate": 0.3, "desc": "银联码月均流水×12×30%-负债"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 8}, "debtReq": {"ratio": 0.85}, "tag": "银联/农行收款码", "note": "农行惠农e贷系列；营业执照满1-2年，银联码连续使用6个月以上", "rawFormula": "收款码流水×30%-负债；优质商户可达1000万", "excludeMortgageFromDebt": true}, {"id": "P_ABC_003", "name": "微捷贷3.0", "bank": "农业银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.3, "rateH": 4.5, "term": 12, "repay": "随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"noSeriousOverdue": true}, "debtReq": {"ratio": 0.7}, "tag": "全线上普惠", "note": "农行线上普惠核心产品", "rawFormula": "综合经营数据授信", "excludeMortgageFromDebt": true}, {"id": "P_ABC_004", "name": "流水e贷", "bank": "农业银行", "type": "流水贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.65, "rateH": 4.15, "term": 36, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "CF", "rate": 0.25, "desc": "对公月均流水×12×25%-负债"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.85, "maxOrgs": 2}, "tag": "轻征信重流水", "note": "专精特新企业可提额至1000万", "rawFormula": "对公账户月均流水×倍数；年开票≥20万或年度流水≥300万", "excludeMortgageFromDebt": true}, {"id": "P_ABC_006", "name": "渝惠e贷", "bank": "农业银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 4.5, "term": 12, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"minYears": 1}, "debtReq": {"ratio": 0.7}, "tag": "重庆专属", "note": "农行重庆市分行区域特色产品", "rawFormula": "纳税数据授信", "excludeMortgageFromDebt": true}, {"id": "P_ABC_007", "name": "科创企业绿色通道", "bank": "农业银行", "type": "科技贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 2.6, "rateH": 3.85, "term": 60, "repay": "先息后本", "industry": "科技制造", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术"}, "debtReq": {"ratio": 0.7}, "tag": "专精特新", "note": "农行专精特新小巨人贷最高3000万", "rawFormula": "知识价值/研发投入授信；贴息后利率更优"}, {"id": "P_ABC_008", "name": "链捷贷", "bank": "农业银行", "type": "供应链金融", "maxAmt": 3000.0, "minAmt": 10.0, "rateL": 2.8, "rateH": 4.5, "term": 12, "repay": "按月付息到期还本/等额本息", "industry": "制造贸易物流", "minTax": 0.0, "minInv": 0.0, "channel": "线上预审+线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": {"type": "AR", "rate": 0.8, "desc": "应收账款×80%"}, "creditReq": {"noSeriousOverdue": true, "needSpecialCert": "supply_chain"}, "debtReq": {"ratio": 0.85}, "tag": "供应链", "note": "2026年利率2.8%起；单户最高1000-3000万", "rawFormula": "应收账款×80%或订单数据授信"}, {"id": "P_ICBC_001", "name": "经营快贷", "bank": "工商银行", "type": "信用贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 5.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下增信", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 15}, "debtReq": {"ratio": 0.7}, "tag": "工银普惠首选", "note": "≤50万纯线上直批；支持微信/支付宝流水授权", "rawFormula": "五大通道：结算/税务/商户/资产/泛交易链", "excludeMortgageFromDebt": true}, {"id": "P_ICBC_002", "name": "e抵快贷", "bank": "工商银行", "type": "抵押贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 3.2, "rateH": 4.5, "term": 120, "repay": "先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线上申请+线下抵押", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "ASSET", "rate": 0.7, "desc": "房产评估值×70%-负债"}, "creditReq": {}, "debtReq": {"ratio": 0.8}, "tag": "房产抵押线上化", "note": "合同最长10年，单笔最长3年；住宅/商铺/写字楼均可", "rawFormula": "住宅评估值×70%；支持二抵"}, {"id": "P_ICBC_003", "name": "e企快贷", "bank": "工商银行", "type": "抵押贷", "maxAmt": 3000.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.8, "term": 60, "repay": "先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下抵押", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.8}, "tag": "大额抵押", "note": "额度更高，线下评估签约", "rawFormula": "住宅/商铺/工业厂房均可抵押"}, {"id": "P_ICBC_004", "name": "科创贷/兴科贷", "bank": "工商银行", "type": "科技贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 2.6, "rateH": 3.1, "term": 36, "repay": "先息后本", "industry": "科技制造", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术"}, "debtReq": {"ratio": 0.7}, "tag": "专精特新", "note": "支持无还本续贷；可叠加政府贴息", "rawFormula": "专利/研发/知识价值授信；最高可至3000万"}, {"id": "P_ICBC_005", "name": "制造e贷", "bank": "工商银行", "type": "信用贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 4.5, "term": 12, "repay": "先息后本", "industry": "制造业", "minTax": 0.0, "minInv": 0.0, "channel": "线上申请", "isOnline": false, "offlineSpace": "medium", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "制造业专项", "note": "聚焦制造业，纯信用快速测额", "rawFormula": "设备采购/原材料/生产周转", "excludeMortgageFromDebt": true}, {"id": "P_ICBC_006", "name": "工银玺链", "bank": "工商银行", "type": "供应链金融", "maxAmt": 3000.0, "minAmt": 10.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "随销售回款", "industry": "制造贸易物流", "minTax": 0.0, "minInv": 0.0, "channel": "线上", "isOnline": false, "offlineSpace": "medium", "entity": ["有限公司"], "formula": {"type": "AR", "rate": 0.8, "desc": "应收账款×80%"}, "creditReq": {"noSeriousOverdue": true, "needSpecialCert": "supply_chain"}, "debtReq": {"ratio": 0.85}, "tag": "供应链", "note": "无需线下签约；全线上操作", "rawFormula": "应收账款×80%或核心企业信用穿透"}, {"id": "P_ICBC_007", "name": "跨境快贷·出口贷", "bank": "工商银行", "type": "贸易贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 4.0, "rateH": 5.2, "term": 12, "repay": "先息后本", "industry": "外贸/新能源出口", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": null, "creditReq": {"needSpecialCert": "foreign_trade"}, "debtReq": {"ratio": 0.7}, "tag": "出口企业", "note": "面向外贸出口企业", "rawFormula": "报关单/订单/结汇数据授信"}, {"id": "P_ICBC_008", "name": "税务贷", "bank": "工商银行", "type": "税贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.1, "rateH": 4.1, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 5.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": {"type": "TAX", "rateA": 9, "rateB": 8, "rateM": 6, "rateDef": 6, "desc": "年纳税×(A:9/B:8/M:6)倍-负债"}, "creditReq": {"no333Years": 2, "needTaxGrade": ["A", "B", "M"]}, "debtReq": {"ratio": 0.7}, "tag": "以税定贷", "note": "工行经营快贷核心子产品；纳税通道权重占比40%", "rawFormula": "年纳税×倍数；纳税A级可低至2.68%-2.75%", "excludeMortgageFromDebt": true}, {"id": "P_ICBC_009", "name": "结算贷", "bank": "工商银行", "type": "流水贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.65, "rateH": 4.35, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "工行结算客户", "note": "工行经营快贷子产品；以行内结算流水为核心授信依据", "rawFormula": "工行流水×授信系数", "excludeMortgageFromDebt": true}, {"id": "P_CQRCB_001", "name": "小微企业便捷贷", "bank": "重庆农商行", "type": "综合贷", "maxAmt": 2000.0, "minAmt": 10.0, "rateL": 3.5, "rateH": 5.0, "term": 36, "repay": "先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "额度循环", "note": "渝农商行拳头产品", "rawFormula": "综合评估，一次授信循环支用", "excludeMortgageFromDebt": true}, {"id": "P_CQRCB_002", "name": "个人助业贷款", "bank": "重庆农商行", "type": "经营贷", "maxAmt": 1000.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 120, "repay": "先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "手机银行自助", "isOnline": false, "offlineSpace": "medium", "entity": ["个体户", "自然人"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "循环支用", "note": "最长10年，手机银行办理", "rawFormula": "一次授信，循环支用"}, {"id": "P_CQRCB_003", "name": "税易贷", "bank": "重庆农商行", "type": "税贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 24, "repay": "先息后本", "industry": "全行业", "minTax": 5.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": {"type": "TAX", "rateA": 9, "rateB": 8, "rateM": 6, "rateDef": 6, "desc": "年纳税×(A:9/B:8/M:6)倍-负债"}, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "以税定贷", "note": "纯信用无抵押", "rawFormula": "年纳税×倍数", "excludeMortgageFromDebt": true}, {"id": "P_CQRCB_004", "name": "小微增信贷", "bank": "重庆农商行", "type": "增信贷", "maxAmt": 1000.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 60, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "银政合作", "note": "个人最高500万，企业最高1000万", "rawFormula": "政府推荐函增信"}, {"id": "P_CQRCB_005", "name": "创业担保贷", "bank": "重庆农商行", "type": "政策性贷", "maxAmt": 600.0, "minAmt": 1.0, "rateL": 2.0, "rateH": 3.0, "term": 36, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "政府贴息", "note": "个人最高50万，企业最高600万；期限36/24个月", "rawFormula": "贴息50%，担保费补贴"}, {"id": "P_CQRCB_006", "name": "专精特新专项贷", "bank": "重庆农商行", "type": "科技贷", "maxAmt": 5000.0, "minAmt": 10.0, "rateL": 3.5, "rateH": 5.0, "term": 36, "repay": "先息后本", "industry": "科技制造", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术"}, "debtReq": {"ratio": 0.7}, "tag": "专精特新", "note": "额度高、方式多、云签约可续贷", "rawFormula": "知识价值/研发授信"}, {"id": "P_CQRCB_007", "name": "个人经营性房快贷", "bank": "重庆农商行", "type": "抵押贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.5, "rateH": 5.0, "term": 120, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线上申请+线上抵押", "isOnline": false, "offlineSpace": "medium", "entity": ["个体户", "自然人"], "formula": {"type": "ASSET", "rate": 0.7, "desc": "房产评估值×70%-负债"}, "creditReq": {}, "debtReq": {"ratio": 0.8}, "tag": "房产抵押", "note": "手机申请、远程评估、线上抵押", "rawFormula": "住宅评估值×70%"}, {"id": "P_CQRCB_008", "name": "渝快振兴贷", "bank": "重庆农商行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "餐饮/商超/医疗/农贸", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["个体户"], "formula": null, "creditReq": {"needSpecialCert": "chongqing_local"}, "debtReq": {"ratio": 0.85}, "tag": "定制化", "note": "在线申请，无需抵押", "rawFormula": "专属白名单授信", "excludeMortgageFromDebt": true}, {"id": "P_CQRCB_009", "name": "新质贷", "bank": "重庆农商行", "type": "信用贷", "maxAmt": 500, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "新质生产力企业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "新兴产业", "note": "渝农商行创新产品", "rawFormula": "创新产品，聚焦新兴产业", "excludeMortgageFromDebt": true}, {"id": "P_CQRCB_010", "name": "设备更新贷", "bank": "重庆农商行", "type": "抵押贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.5, "rateH": 5.0, "term": 36, "repay": "先息后本", "industry": "制造业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.8}, "tag": "制造业", "note": "支持设备更新和技术改造", "rawFormula": "设备抵押或信用"}, {"id": "P_CQRCB_011", "name": "医保贷", "bank": "重庆农商行", "type": "信用贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "医疗医保定点", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needSettlement": true, "needSpecialCert": "medical_insurance"}, "debtReq": {"ratio": 0.7}, "tag": "医保数据", "note": "适合民营医院、药店", "rawFormula": "医保结算数据授信", "excludeMortgageFromDebt": true}, {"id": "P_CQRCB_012", "name": "富农贷", "bank": "重庆农商行", "type": "涉农贷", "maxAmt": 50.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 36, "repay": "先息后本/等额本息", "industry": "农户/农业经营", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["农户"], "formula": null, "creditReq": {"needSpecialCert": "agriculture"}, "debtReq": {"ratio": 0.85}, "tag": "乡村振兴", "note": "面向农户信用贷款；涉农贷款余额超2600亿元", "rawFormula": "信用/担保/抵押多种方式"}, {"id": "P_CQRCB_013", "name": "涪陵榨菜贷", "bank": "重庆农商行", "type": "涉农贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "榨菜产业链", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户", "农户"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "一乡一品", "note": "重庆农商行“一乡一品”特色产品；20余款标准化特色信贷产品之一", "rawFormula": "产业链经营数据授信"}, {"id": "P_CQRCB_014", "name": "江津花椒贷", "bank": "重庆农商行", "type": "涉农贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "花椒产业链", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户", "农户"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "一乡一品", "note": "重庆农商行“一乡一品”特色产品", "rawFormula": "产业链经营数据授信"}, {"id": "P_CQRCB_015", "name": "云阳面业贷", "bank": "重庆农商行", "type": "涉农贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "面业产业链", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户", "农户"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "一乡一品", "note": "重庆农商行“一乡一品”特色产品", "rawFormula": "产业链经营数据授信"}, {"id": "P_CQRCB_016", "name": "巫山脆李贷", "bank": "重庆农商行", "type": "涉农贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "脆李产业链", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户", "农户"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "一乡一品", "note": "重庆农商行“一乡一品”特色产品", "rawFormula": "产业链经营数据授信"}, {"id": "P_CQRCB_017", "name": "江渝上市贷", "bank": "重庆农商行", "type": "信用贷", "maxAmt": 5000.0, "minAmt": 100.0, "rateL": 3.5, "rateH": 5.0, "term": 36, "repay": "先息后本", "industry": "拟上市/已上市企业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "上市企业", "note": "重庆农商行创新产品；助力民营企业上市", "rawFormula": "综合经营数据授信", "excludeMortgageFromDebt": true}, {"id": "P_CQB_001", "name": "好企税信贷", "bank": "重庆银行", "type": "税贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 9.0, "rateH": 9.0, "term": 12, "repay": "先息后本", "industry": "全行业", "minTax": 0.5, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "以税定贷", "note": "好企贷系列；重庆、四川、贵州、陕西四省区", "rawFormula": "月利率0.75%（年化约9%）", "excludeMortgageFromDebt": true}, {"id": "P_CQB_002", "name": "知识价值信用贷", "bank": "重庆银行", "type": "科技贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 3.0, "term": 12, "repay": "先息后本", "industry": "科技型企业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "科技企业", "note": "按LPR利率执行；科委评级体系", "rawFormula": "知识价值评级授信"}, {"id": "P_CQB_003", "name": "商业价值信用贷", "bank": "重庆银行", "type": "信用贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 3.65, "rateH": 4.3, "term": 36, "repay": "先息后本", "industry": "专精特新", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术"}, "debtReq": {"ratio": 0.7}, "tag": "专精特新", "note": "利率不超过一年期LPR+65bp", "rawFormula": "额度从300万提至1000万", "excludeMortgageFromDebt": true}, {"id": "P_CQB_004", "name": "优优贷", "bank": "重庆银行", "type": "抵押贷", "maxAmt": 3000.0, "minAmt": 10.0, "rateL": 3.5, "rateH": 5.0, "term": 36, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.8}, "tag": "大额抵押", "note": "材料简，额度高", "rawFormula": "抵质押担保，审批快"}, {"id": "P_CQB_005", "name": "好企知产贷", "bank": "重庆银行", "type": "知识产权贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.5, "term": 36, "repay": "先息后本", "industry": "科技型企业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "知产质押", "note": "与科委合作", "rawFormula": "评估值和保险费有补贴"}, {"id": "P_CQB_006", "name": "好企抵押贷", "bank": "重庆银行", "type": "抵押贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 4.0, "rateH": 6.12, "term": 60, "repay": "随借随还循环使用", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": {"type": "ASSET", "rate": 0.65, "desc": "资产评估值×65%-负债"}, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "房产抵押", "note": "好企贷系列；最高额授信期限5年；循环额度", "rawFormula": "住宅/商铺评估值×抵押率"}, {"id": "P_CQB_007", "name": "好企流水贷", "bank": "重庆银行", "type": "流水贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 7.2, "rateH": 7.2, "term": 60, "repay": "随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "CF", "rate": 0.25, "desc": "对公月均流水×12×25%-负债"}, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "以流定贷", "note": "好企贷系列；月利率低至0.6%；随借随还循环使用", "rawFormula": "对公/对私流水×倍数", "excludeMortgageFromDebt": true}, {"id": "P_CQB_008", "name": "普惠科企贷", "bank": "重庆银行", "type": "科技贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "科技型企业", "minTax": 0.0, "minInv": 0.0, "channel": "线上线下结合", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "科技型企业"}, "debtReq": {"ratio": 0.85}, "tag": "科技企业", "note": "2026年普惠科企贷；支持专精特新/高新技术企业", "rawFormula": "知识价值/科技资质授信"}, {"id": "P_CQSX_001", "name": "商户贷", "bank": "三峡银行", "type": "流水贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 4.0, "rateH": 6.0, "term": 12, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "全线上秒批", "note": "三峡惠贷系列；全市所有区县覆盖", "rawFormula": "银联收款码流水授信", "excludeMortgageFromDebt": true}, {"id": "P_CQSX_002", "name": "渝链贷", "bank": "三峡银行", "type": "供应链金融", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 5.0, "term": 12, "repay": "随销售回款", "industry": "链上中小微企业", "minTax": 0.0, "minInv": 0.0, "channel": "线上", "isOnline": false, "offlineSpace": "medium", "entity": ["有限公司"], "formula": null, "creditReq": {"noSeriousOverdue": true, "needSpecialCert": "supply_chain"}, "debtReq": {"ratio": 0.85}, "tag": "供应链", "note": "最快T+1放款", "rawFormula": "隐私计算技术授信"}, {"id": "P_CQSX_003", "name": "新质贷", "bank": "三峡银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "新质生产力", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "新兴产业", "note": "创新产品", "rawFormula": "精准匹配产业集群", "excludeMortgageFromDebt": true}, {"id": "P_CQSX_004", "name": "科创贷", "bank": "三峡银行", "type": "科技贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "科技型企业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "科技企业", "note": "降低融资门槛", "rawFormula": "纯信用线上产品"}, {"id": "P_CQSX_005", "name": "惠企贷", "bank": "三峡银行", "type": "综合贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.5, "term": 24, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "多元担保", "note": "覆盖多元场景", "rawFormula": "信用/抵押/质押均可", "excludeMortgageFromDebt": true}, {"id": "P_CQSX_007", "name": "兔链贷", "bank": "三峡银行", "type": "涉农贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 3.0, "term": 12, "repay": "先息后本", "industry": "肉兔养殖", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["农户", "合作社"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "产业链专项", "note": "三峡银行乡村振兴产品；奉节肉兔产业链专项", "rawFormula": "兔产业链经营数据授信"}, {"id": "P_CQSX_008", "name": "渝贷系列", "bank": "三峡银行", "type": "综合贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 6.0, "term": 36, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"needSpecialCert": "chongqing_local"}, "debtReq": {"ratio": 0.85}, "tag": "区域特色", "note": "三峡银行地方特色产品", "rawFormula": "综合授信产品线", "excludeMortgageFromDebt": true}, {"id": "P_GUAR_001", "name": "担保过渡贷", "bank": "重庆担保公司", "type": "过渡贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 12.0, "rateH": 18.0, "term": 24, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "应急周转", "note": "短期应急后转银行低息产品；利率远高于银行", "rawFormula": "银行拒贷后过渡"}, {"id": "P_GUAR_002", "name": "创业担保贷（政策性）", "bank": "重庆担保公司", "type": "政策性贷", "maxAmt": 600.0, "minAmt": 1.0, "rateL": 2.0, "rateH": 3.0, "term": 36, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "政府贴息", "note": "个人最高50万，企业最高600万；累计不超过3次", "rawFormula": "财政给予50%贴息"}, {"id": "P_GUAR_003", "name": "小微担保贷", "bank": "重庆小微担保", "type": "担保贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 4.0, "rateH": 6.0, "term": 24, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"noSeriousOverdue": true}, "debtReq": {"ratio": 0.85}, "tag": "政府性担保", "note": "重庆小微担保（政府性）；担保费享受财政补贴", "rawFormula": "担保公司增信后银行放款"}, {"id": "P_OTHER_001", "name": "房产二抵贷", "bank": "多家银行", "type": "抵押贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 4.0, "rateH": 6.0, "term": 36, "repay": "按月付息到期还本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "ASSET", "rate": 0.7, "desc": "房产评估值×70%-负债"}, "creditReq": {"noCurrentOverdue": true}, "debtReq": {"ratio": 0.85}, "tag": "二次抵押", "note": "重庆农商行等可办；评估周期2-3周", "rawFormula": "评估值×70%-原贷款余额"}, {"id": "P_OTHER_002", "name": "政府贴息普惠贷", "bank": "多家银行", "type": "政策性贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 1.5, "rateH": 3.0, "term": 36, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "政府贴息", "note": "需提前申报，纳入“1+3+N”政策体系", "rawFormula": "贷款利率-政府贴息（约1%-1.5%）"}, {"id": "P_OTHER_003", "name": "小额信用贷", "bank": "多家银行", "type": "信用贷", "maxAmt": 50.0, "minAmt": 1.0, "rateL": 6.0, "rateH": 15.0, "term": 24, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "新企业/无数据", "note": "建行“首户快贷”最高50万；适合新开业客户", "rawFormula": "无需任何抵押和流水", "excludeMortgageFromDebt": true}, {"id": "P_OTHER_004", "name": "经营贷置换", "bank": "多家银行", "type": "置换贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.5, "term": 36, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "债务优化", "note": "需证明资金用于经营；利率可降50%-70%", "rawFormula": "将高息消费贷置换为低息经营贷"}, {"id": "P_FUB_001", "name": "富税贷", "bank": "富民银行", "type": "税贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 7.2, "rateH": 24.0, "term": 24, "repay": "等额本金/随借随还/先息后本", "industry": "全行业", "minTax": 5.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "TAX", "rateA": 8, "rateB": 7, "rateM": 6, "rateDef": 5, "desc": "年纳税×(A:8/B:7/M:6)倍-负债"}, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "民营银行", "note": "民营银行；2026年通过率提升25%，件均50万；重庆本土民营银行", "rawFormula": "年缴税额×5-8倍；部分贴息后低至1.775%", "excludeMortgageFromDebt": true}, {"id": "P_FUB_002", "name": "富业贷", "bank": "富民银行", "type": "供应链金融", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 12.0, "rateH": 18.0, "term": 24, "repay": "随借随还/按日计息", "industry": "全行业", "minTax": 0.0, "minInv": 100.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "票据链", "note": "支持随借随还、按日计息；以企业债项为授信基础", "rawFormula": "企业纳税/发票/承兑汇票授信"}, {"id": "P_CF_001", "name": "安逸花经营版", "bank": "马上消费金融", "type": "消费贷", "maxAmt": 20.0, "minAmt": 1.0, "rateL": 7.2, "rateH": 24.0, "term": 24, "repay": "等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["自然人"], "formula": null, "creditReq": {"noSeriousOverdue": true}, "debtReq": {"ratio": 0.85}, "tag": "应急周转", "note": "持牌消费金融公司产品；自动审批率达98%", "rawFormula": "个人信用评估授信"}, {"id": "P_CF_002", "name": "新市民创业贷", "bank": "马上消费金融", "type": "信用贷", "maxAmt": 20.0, "minAmt": 1.0, "rateL": 7.2, "rateH": 24.0, "term": 24, "repay": "等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["自然人"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "新市民专享", "note": "2026年4月新品；面向新市民创业群体", "rawFormula": "个人信用+创业计划授信", "excludeMortgageFromDebt": true}, {"id": "P_BOC_001", "name": "创业担保贷", "bank": "中国银行", "type": "政策性贷", "maxAmt": 600.0, "minAmt": 1.0, "rateL": 1.5, "rateH": 3.0, "term": 36, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "政府贴息", "note": "中国银行重庆市分行；与38个区县就业部门联动，全域覆盖", "rawFormula": "财政贴息50%"}, {"id": "P_BOC_002", "name": "中银E贷", "bank": "中国银行", "type": "消费贷", "maxAmt": 30.0, "minAmt": 1.0, "rateL": 3.4, "rateH": 4.5, "term": 60, "repay": "等额本息/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["自然人"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "个人消费", "note": "额度上限提升至30万；还款期限延长至5年", "rawFormula": "个人信用评估授信"}, {"id": "P_BOC_003", "name": "随心智贷", "bank": "中国银行", "type": "消费贷", "maxAmt": 50.0, "minAmt": 1.0, "rateL": 3.4, "rateH": 4.5, "term": 60, "repay": "等额本息/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["自然人"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "个人消费", "note": "额度上限提升至50万；还款期限延长至5年", "rawFormula": "个人信用评估授信"}, {"id": "P_BOC_004", "name": "惠如愿·创担贷", "bank": "中国银行", "type": "政策性贷", "maxAmt": 600.0, "minAmt": 1.0, "rateL": 1.5, "rateH": 3.0, "term": 36, "repay": "按月付息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "政府贴息", "note": "中国银行惠如愿系列；银担同步审查高效审批", "rawFormula": "政府贴息50%+担保费补贴；招聘员工可提额"}, {"id": "P_BOC_005", "name": "惠如愿·小微外贸贷", "bank": "中国银行", "type": "贸易贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 5.0, "term": 12, "repay": "先息后本/随借随还", "industry": "外贸出口", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": null, "creditReq": {"needSpecialCert": "foreign_trade"}, "debtReq": {"ratio": 0.85}, "tag": "外贸专享", "note": "“信贷工厂”高效审批；发改委/中信保重点客群可享更低利率", "rawFormula": "近12个月收汇额+中行结算量挂钩授信"}, {"id": "P_BOC_006", "name": "惠如愿·新质生产力贷", "bank": "中国银行", "type": "科技贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 2.35, "rateH": 3.5, "term": 36, "repay": "先息后本", "industry": "新质生产力", "minTax": 0.0, "minInv": 0.0, "channel": "线上线下结合", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "新质生产力", "note": "领券后LPR基础打7.9折，年化最低2.35%", "rawFormula": "多维增信（纳税/厂房/投资/薪资）授信，最长3年，流动资金贷款"}, {"id": "P_BOC_007", "name": "科企梯度贷", "bank": "中国银行", "type": "科技贷", "maxAmt": 2000.0, "minAmt": 10.0, "rateL": 2.5, "rateH": 4.0, "term": 120, "repay": "按月付息", "industry": "科技制造", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "政银担合作", "note": "中国银行重庆高新分行+科学城担保；创新“政银担”产品", "rawFormula": "按企业成长阶段梯度授信；科学城融资担保增信"}, {"id": "P_COMM_001", "name": "普惠e贷(企业版)", "bank": "交通银行", "type": "综合贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 8.0, "term": 24, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下增信", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85, "maxOrgs": 3}, "tag": "综合授信", "note": "2026年全面升级；对制造业非常友好；审批反馈快", "rawFormula": "综合纳税+流水+房产多维度授信；信用最高300万，抵押最高1000万", "excludeMortgageFromDebt": true}, {"id": "P_COMM_002", "name": "税融通", "bank": "交通银行", "type": "税贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 8.0, "term": 24, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 1.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"maxQuery3m": 4, "needTaxGrade": ["A", "B"], "minTaxAmt": 1.0}, "debtReq": {"ratio": 0.85, "maxOrgs": 2}, "tag": "以税定贷", "note": "交通银行2026版；利率最低可至3.25%；先息后本，随借随还", "rawFormula": "纳税数据授信；担保版最高500万，最长2年可循环提用", "excludeMortgageFromDebt": true}, {"id": "P_COMM_003", "name": "惠商贷", "bank": "交通银行", "type": "信用贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 2.88, "rateH": 9.45, "term": 36, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "个体户专享", "note": "2026年；30万以下可自主支付；支持无本续贷咨询", "rawFormula": "税务开票/银联流水/AUM/订烟数据多维度评估；分行可下浮30BP", "excludeMortgageFromDebt": true}, {"id": "P_COMM_004", "name": "无还本续贷专项", "bank": "交通银行", "type": "信用贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 8.0, "term": 24, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线上线下结合", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "存量客户", "note": "2026年贴息政策同步落地；降低融资成本", "rawFormula": "存量客户续贷专项通道；符合条件可享2026财政部贴息", "excludeMortgageFromDebt": true}, {"id": "P_BOCOM_001", "name": "线上税融通", "bank": "交通银行", "type": "税贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.25, "rateH": 8.0, "term": 24, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 1.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "TAX", "rateA": 9, "rateB": 8, "rateM": 6, "rateDef": 6, "desc": "年纳税×(A:9/B:8/M:6)倍-负债"}, "creditReq": {"minYears": 2, "needTaxGrade": ["A", "B"], "minTaxAmt": 1.0}, "debtReq": {"ratio": 0.85, "maxOrgs": 2}, "tag": "以税定贷", "note": "交行标准税贷产品；大行中利率较低", "rawFormula": "年纳税×倍数；担保版最高500万", "excludeMortgageFromDebt": true}, {"id": "P_PAB_001", "name": "平安税金贷", "bank": "平安银行", "type": "税贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 4.0, "rateH": 6.0, "term": 12, "repay": "先息后本", "industry": "全行业", "minTax": 3.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "TAX", "rateA": 9, "rateB": 8, "rateM": 6, "rateDef": 6, "desc": "年纳税×(A:9/B:8/M:6)倍-负债"}, "creditReq": {"needTaxGrade": ["A", "B", "M"]}, "debtReq": {"ratio": 0.7}, "tag": "以税定贷", "note": "全国性银行；重庆分行可办", "rawFormula": "年纳税×倍数", "excludeMortgageFromDebt": true}, {"id": "P_PAB_002", "name": "平安数保贷", "bank": "平安银行", "type": "担保贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 5.0, "rateH": 7.0, "term": 24, "repay": "先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "担保增信", "note": "平安银行重庆分行；需担保公司介入", "rawFormula": "银行+担保公司联合授信"}, {"id": "P_PAB_003", "name": "橙e贷", "bank": "平安银行", "type": "信用贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 6.0, "term": 36, "repay": "随借随还/先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "线上化经营", "note": "平安银行重庆分行特色产品矩阵", "rawFormula": "纯信用线上化经营贷", "excludeMortgageFromDebt": true}, {"id": "P_PAB_004", "name": "橙业贷", "bank": "平安银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 6.0, "term": 36, "repay": "随借随还/先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "经营贷", "note": "覆盖小微经营贷、税金贷、抵押贷等多元场景", "rawFormula": "小微经营贷产品", "excludeMortgageFromDebt": true}, {"id": "P_PAB_005", "name": "国贸E融", "bank": "平安银行", "type": "贸易贷", "maxAmt": 700.0, "minAmt": 10.0, "rateL": 4.0, "rateH": 6.0, "term": 24, "repay": "随借随还", "industry": "外贸出口/跨境电商", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+实地调查", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": null, "creditReq": {"needSpecialCert": "foreign_trade"}, "debtReq": {"ratio": 0.85}, "tag": "外贸专享", "note": "全国普惠金融典型案例；最高700万纯信用授信；支持离岸账户搭建", "rawFormula": "跨境贸易行为量化授信；KYB大数据风控；覆盖19类贸融及外汇衍生品"}, {"id": "P_PAB_006", "name": "科创贷", "bank": "平安银行", "type": "科技贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 5.0, "term": 36, "repay": "随借随还/先息后本", "industry": "科技型企业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术科技型企业"}, "debtReq": {"ratio": 0.85}, "tag": "科创企业", "note": "平安银行重庆分行；支持知识产权质押", "rawFormula": "科技资质授信，纯信用无抵押"}, {"id": "P_CIB_001", "name": "科技企业研发贷", "bank": "兴业银行", "type": "科技贷", "maxAmt": 2000.0, "minAmt": 10.0, "rateL": 2.7, "rateH": 3.5, "term": 120, "repay": "按月付息", "industry": "科技制造", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "科创专精", "note": "兴业银行；30BP+50BP双重补贴；“技术流”评价模型", "rawFormula": "研发投入×50%（流贷）+设备价款×70%（固贷）；双轨模式最长5年/10年"}, {"id": "P_CIB_002", "name": "科技成果转化贷", "bank": "兴业银行", "type": "科技贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 2.7, "rateH": 3.8, "term": 60, "repay": "按月付息", "industry": "科技制造", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "科创专精", "note": "兴业银行特定科技金融场景专属产品", "rawFormula": "技术成果价值评估授信"}, {"id": "P_CIB_003", "name": "人才贷", "bank": "兴业银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.0, "term": 36, "repay": "按月付息", "industry": "科技型企业", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "人才专享", "note": "兴业银行初创期创业扶持产品", "rawFormula": "人才资质授信纯信用", "excludeMortgageFromDebt": true}, {"id": "P_CIB_004", "name": "创业扶持贷", "bank": "兴业银行", "type": "信用贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 4.5, "term": 36, "repay": "按月付息", "industry": "科技初创", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "初创企业", "note": "兴业银行初创期产品；创新积分贷主动对接", "rawFormula": "创业综合评估授信纯信用", "excludeMortgageFromDebt": true}, {"id": "P_CIB_005", "name": "兴速贷(贴息1%)", "bank": "兴业银行", "type": "信用贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.5, "rateH": 5.5, "term": 12, "repay": "随借随还", "industry": "服务业经营主体", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "贴息专享", "note": "2026年服务业经营主体贷款贴息政策", "rawFormula": "综合经营数据授信；2026年享受1%贴息", "excludeMortgageFromDebt": true}, {"id": "P_CMB_008", "name": "信用招企贷", "bank": "招商银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "轻资产专享", "note": "招行普惠核心产品；2025年累计投放5.7亿元，惠及422户", "rawFormula": "大数据风控多元数据精准画像；申请即审批审批即放款", "excludeMortgageFromDebt": true}, {"id": "P_CMB_009", "name": "抵押招捷贷", "bank": "招商银行", "type": "抵押贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 3.2, "rateH": 4.5, "term": 60, "repay": "先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线上申请+线上评估", "isOnline": false, "offlineSpace": "medium", "entity": ["有限公司", "个体户"], "formula": {"type": "ASSET", "rate": 0.7, "desc": "房产评估值×70%-负债"}, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "房产抵押", "note": "招行；审批快成本低，资金最快当天到账；2025年累计投放0.64亿元", "rawFormula": "住宅评估值×70%；线上评估线上放款"}, {"id": "P_CMB_010", "name": "政采贷", "bank": "招商银行", "type": "供应链金融", "maxAmt": 3000.0, "minAmt": 10.0, "rateL": 3.85, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "政府采购供应商", "minTax": 0.0, "minInv": 0.0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"minYears": 2, "needSpecialCert": "gov_procurement"}, "debtReq": {"ratio": 0.85, "maxOrgs": 3}, "tag": "政府采购", "note": "招行；2025年累计投放2.14亿元，服务64户", "rawFormula": "政府采购合同额×授信比例；政府采购网数据直连线上审批"}, {"id": "P_CMB_011", "name": "订货贷", "bank": "招商银行", "type": "供应链金融", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "随借随还/先息后本", "industry": "核心企业下游经销商", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"needSpecialCert": "supply_chain"}, "debtReq": {"ratio": 0.85}, "tag": "经销商专享", "note": "招行2025年10月上线；累计授信1272万元", "rawFormula": "采购额+合作年限授信；纯信用线上申请"}, {"id": "P_CMB_012", "name": "科创易贷", "bank": "招商银行", "type": "科技贷", "maxAmt": 300.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "科技初创", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "科创专精", "note": "招行科创贷产品体系；初创期专属", "rawFormula": "科技资质/专利授信纯信用"}, {"id": "P_CMB_013", "name": "科创快贷", "bank": "招商银行", "type": "科技贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.5, "term": 24, "repay": "先息后本/随借随还", "industry": "科技成长", "minTax": 0.0, "minInv": 0.0, "channel": "线上线下结合", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "科创专精", "note": "招行科创贷产品体系；成长期专属", "rawFormula": "科技成长评估授信"}, {"id": "P_CMB_014", "name": "科创技改贷", "bank": "招商银行", "type": "科技贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 2.8, "rateH": 4.0, "term": 36, "repay": "按月付息", "industry": "制造业技改", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "科技型企业"}, "debtReq": {"ratio": 0.85}, "tag": "科创专精", "note": "招行科创技改场景专属；支持设备采购升级", "rawFormula": "技术改造投入评估授信"}, {"id": "P_CMB_015", "name": "科创人才贷", "bank": "招商银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 10.0, "rateL": 2.8, "rateH": 4.0, "term": 36, "repay": "按月付息", "industry": "科技人才创办", "minTax": 0.0, "minInv": 0.0, "channel": "线下尽调", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "人才专享", "note": "招行激发高校人才活力的专属产品", "rawFormula": "人才资质+研发能力授信", "excludeMortgageFromDebt": true}, {"id": "P_SPDB_001", "name": "浦闪贷", "bank": "浦发银行", "type": "信用贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 2.85, "rateH": 5.0, "term": 36, "repay": "随借随还/先息后本", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["自然人"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "个人信用", "note": "浦发银行；2026年贴息政策叠加", "rawFormula": "个人信用评估授信；优质客户可享利率优惠", "excludeMortgageFromDebt": true}, {"id": "P_SPDB_002", "name": "浦惠e贷", "bank": "浦发银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.0, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "普惠金融", "note": "浦发银行重庆分行标准普惠产品", "rawFormula": "综合经营数据授信", "excludeMortgageFromDebt": true}, {"id": "P_SPDB_003", "name": "政采e贷", "bank": "浦发银行", "type": "供应链金融", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.5, "rateH": 5.5, "term": 12, "repay": "先息后本/随借随还", "industry": "政府采购供应商", "minTax": 0.0, "minInv": 0.0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needSpecialCert": "gov_procurement"}, "debtReq": {"ratio": 0.7}, "tag": "政府采购", "note": "浦发银行线上化政采专项", "rawFormula": "政府采购合同额授信"}, {"id": "P_CEB_001", "name": "阳光e微贷", "bank": "光大银行", "type": "信用贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.0, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "纯信用线上", "note": "光大银行重庆分行普惠核心产品", "rawFormula": "经营数据线上授信", "excludeMortgageFromDebt": true}, {"id": "P_CEB_002", "name": "阳光e抵贷", "bank": "光大银行", "type": "抵押贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.2, "rateH": 5.0, "term": 36, "repay": "先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "线上申请+线上评估", "isOnline": false, "offlineSpace": "medium", "entity": ["有限公司", "个体户"], "formula": {"type": "ASSET", "rate": 0.65, "desc": "资产评估值×65%-负债"}, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "房产抵押", "note": "光大银行线上化抵押产品", "rawFormula": "住宅/商铺评估值×抵押率"}, {"id": "P_CMBC_001", "name": "民生小微贷", "bank": "民生银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.0, "term": 24, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "经营周转", "note": "民生银行重庆分行普惠产品", "rawFormula": "综合经营数据授信", "excludeMortgageFromDebt": true}, {"id": "P_CMBC_002", "name": "民生纳税贷", "bank": "民生银行", "type": "税贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.0, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 1.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "TAX", "rateA": 10, "rateB": 8, "rateM": 6, "rateDef": 5, "desc": "年纳税×(A:10/B:8/M:6)倍-负债"}, "creditReq": {"needTaxGrade": ["A", "B"], "minTaxAmt": 1.0}, "debtReq": {"ratio": 0.7}, "tag": "以税定贷", "note": "民生银行线上化税贷", "rawFormula": "年纳税×5-10倍", "excludeMortgageFromDebt": true}, {"id": "P_CGB_001", "name": "税银通", "bank": "广发银行", "type": "税贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.0, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 1.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "TAX", "rateA": 9, "rateB": 8, "rateM": 6, "rateDef": 6, "desc": "年纳税×(A:9/B:8/M:6)倍-负债"}, "creditReq": {"needTaxGrade": ["A", "B"], "minTaxAmt": 1.0}, "debtReq": {"ratio": 0.7}, "tag": "以税定贷", "note": "广发银行重庆分行普惠产品", "rawFormula": "年纳税×倍数", "excludeMortgageFromDebt": true}, {"id": "P_CGB_002", "name": "小微E贷", "bank": "广发银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.0, "term": 24, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "纯信用线上", "note": "广发银行普惠核心产品", "rawFormula": "经营流水授信", "excludeMortgageFromDebt": true}, {"id": "P_HFB_001", "name": "恒丰税贷", "bank": "恒丰银行", "type": "税贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.0, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 1.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "TAX", "rateA": 9, "rateB": 8, "rateM": 6, "rateDef": 6, "desc": "年纳税×(A:9/B:8/M:6)倍-负债"}, "creditReq": {"needTaxGrade": ["A", "B"], "minTaxAmt": 1.0}, "debtReq": {"ratio": 0.7}, "tag": "以税定贷", "note": "恒丰银行重庆分行普惠产品", "rawFormula": "年纳税×倍数", "excludeMortgageFromDebt": true}, {"id": "P_HFB_002", "name": "恒丰小微贷", "bank": "恒丰银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.0, "term": 24, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "普惠金融", "note": "恒丰银行普惠核心产品", "rawFormula": "综合经营数据授信", "excludeMortgageFromDebt": true}, {"id": "P_NYCB_001", "name": "粤商贷系列", "bank": "南粤银行", "type": "综合贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.5, "term": 24, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "区域特色", "note": "南粤银行重庆分行普惠产品", "rawFormula": "综合经营数据授信", "excludeMortgageFromDebt": true}, {"id": "P_HKB_001", "name": "汉银小微贷系列", "bank": "汉口银行", "type": "综合贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.5, "term": 24, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上+线下", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "区域特色", "note": "汉口银行重庆分行普惠产品", "rawFormula": "综合经营数据授信", "excludeMortgageFromDebt": true}, {"id": "P_PSBC_001", "name": "小微易贷", "bank": "邮储银行", "type": "信用贷", "maxAmt": 500.0, "minAmt": 1.0, "rateL": 3.1, "rateH": 6.0, "term": 36, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"noSeriousOverdue": true}, "debtReq": {"ratio": 0.85}, "tag": "纯信用线上", "note": "邮储“渝”系列核心产品；累计投放普惠小微贷款200亿元", "rawFormula": "综合经营数据授信；最快3分钟授信当日放款", "excludeMortgageFromDebt": true}, {"id": "P_PSBC_002", "name": "极速贷", "bank": "邮储银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 6.5, "term": 24, "repay": "先息后本/等额本息", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "全线上秒批", "note": "邮储银行数字化拳头产品；全线上纯信用", "rawFormula": "最快3分钟授信当日放款", "excludeMortgageFromDebt": true}, {"id": "P_PSBC_003", "name": "科创信用贷", "bank": "邮储银行", "type": "科技贷", "maxAmt": 1000.0, "minAmt": 10.0, "rateL": 2.5, "rateH": 4.0, "term": 60, "repay": "先息后本", "industry": "科技制造", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术"}, "debtReq": {"ratio": 0.7}, "tag": "科创企业", "note": "邮储“U益创”品牌；2025年为科技型企业提供资金约48.25亿元", "rawFormula": "科技资质+经营综合数据授信；无抵押"}, {"id": "P_PSBC_004", "name": "花椒产业链贷", "bank": "邮储银行", "type": "涉农贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 5.0, "term": 24, "repay": "先息后本/随借随还", "industry": "花椒产业链", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户", "农户"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "一乡一品", "note": "邮储“渝见希望”品牌；累计发放特色产业相关贷款超60亿元", "rawFormula": "产业链经营数据授信"}, {"id": "P_PSBC_005", "name": "脆李产业链贷", "bank": "邮储银行", "type": "涉农贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 5.0, "term": 24, "repay": "先息后本/随借随还", "industry": "脆李产业链", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户", "农户"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "一乡一品", "note": "邮储“渝见希望”品牌；覆盖40个产业链贷", "rawFormula": "产业链经营数据授信"}, {"id": "P_PSBC_006", "name": "生猪养殖贷", "bank": "邮储银行", "type": "涉农贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 5.0, "term": 24, "repay": "先息后本/随借随还", "industry": "生猪养殖", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["农户", "合作社"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "三农专属", "note": "邮储银行；累计发放相关贷款65亿元", "rawFormula": "养殖数据授信，32个特色农业信用贷之一"}, {"id": "P_PSBC_007", "name": "柑橘产业链贷", "bank": "邮储银行", "type": "涉农贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.0, "rateH": 5.0, "term": 24, "repay": "先息后本/随借随还", "industry": "柑橘种植", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户", "农户"], "formula": null, "creditReq": {"needSpecialCert": "agri_chain"}, "debtReq": {"ratio": 0.85}, "tag": "一乡一品", "note": "邮储“渝见希望”品牌；“一品一策”精准滴灌", "rawFormula": "产业链经营数据授信"}, {"id": "P_PSBC_008", "name": "U益创", "bank": "邮储银行", "type": "科技贷", "maxAmt": 2000.0, "minAmt": 10.0, "rateL": 2.8, "rateH": 4.0, "term": 120, "repay": "先息后本", "industry": "科技企业", "minTax": 0.0, "minInv": 0.0, "channel": "线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术"}, "debtReq": {"ratio": 0.7}, "tag": "全周期科创", "note": "邮储“邮益创”品牌；构建“股+债+贷+保”综合服务体系", "rawFormula": "股权+债权+贷款+担保综合服务"}, {"id": "P_CITIC_001", "name": "信秒贷", "bank": "中信银行", "type": "信用贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.0, "term": 12, "repay": "随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["自然人"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.7}, "tag": "代发工资客户", "note": "中信银行重庆分行；代发工资客户优先", "rawFormula": "个人信用评估授信", "excludeMortgageFromDebt": true}, {"id": "P_CITIC_002", "name": "科创e贷", "bank": "中信银行", "type": "科技贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "科技型企业", "minTax": 0.0, "minInv": 0.0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"needCert": "专精特新或高新技术"}, "debtReq": {"ratio": 0.7}, "tag": "科创专享", "note": "信秒贷补充；中信银行科创专项", "rawFormula": "科技资质授信纯信用"}, {"id": "P_CITIC_003", "name": "有贷户周转贷", "bank": "中信银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.5, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0.0, "minInv": 0.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {}, "debtReq": {"ratio": 0.85}, "tag": "存量增额", "note": "信秒贷补充；存量客户增贷专项", "rawFormula": "存量贷款评估+经营综合数据授信", "excludeMortgageFromDebt": true}, {"id": "P_PSBC_INV1", "name": "小微易贷-发票模式", "bank": "邮储银行", "type": "票据贷", "maxAmt": 300.0, "minAmt": 1.0, "rateL": 3.5, "rateH": 5.4, "term": 12, "repay": "随借随还/按日计息", "industry": "全行业", "minTax": 0, "minInv": 200.0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "INV", "rate": 0.1, "desc": "年开票额×10%-负债"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.85}, "tag": "开票多/纳税少首选", "note": "准入：开票≥200万或纳税≥1万；纯信用最高300万；线下可沟通提额；可叠加担保公司", "rawFormula": "年开票额×10%-负债", "excludeMortgageFromDebt": true}, {"id": "P_PSBC_INV2", "name": "票e贷", "bank": "邮储银行", "type": "票据贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.6, "rateH": 5.0, "term": 12, "repay": "随借随还", "industry": "全行业", "minTax": 0, "minInv": 100.0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "INV", "rate": 0.1, "desc": "年开票额×10%-负债"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 6}, "debtReq": {"ratio": 0.85}, "tag": "线上开票贷", "note": "线上纯信用，凭增值税发票授信，连续开票12个月以上更佳", "rawFormula": "年开票额×10%-负债", "excludeMortgageFromDebt": true}, {"id": "P_CCB_INV", "name": "发票贷", "bank": "建设银行", "type": "票据贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.45, "rateH": 4.8, "term": 12, "repay": "先息后本/随借随还", "industry": "全行业", "minTax": 0, "minInv": 100.0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "INV", "rate": 0.1, "desc": "年开票额×10%-负债"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.85}, "tag": "建行开票授信", "note": "惠懂你系列；以开票数据授信；线下可沟通提额", "rawFormula": "年开票额×10%-负债", "excludeMortgageFromDebt": true}, {"id": "P_ABC_INV", "name": "发票贷", "bank": "农业银行", "type": "票据贷", "maxAmt": 200.0, "minAmt": 1.0, "rateL": 3.45, "rateH": 4.9, "term": 12, "repay": "随借随还", "industry": "全行业", "minTax": 0, "minInv": 100.0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "INV", "rate": 0.1, "desc": "年开票额×10%-负债"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.85}, "tag": "农行开票授信", "note": "纳税e贷发票模式；开票多纳税少可做；线下空间大", "rawFormula": "年开票额×10%-负债", "excludeMortgageFromDebt": true}, {"id": "P_CQRC_INV", "name": "票据e贷", "bank": "重庆农商行", "type": "票据贷", "maxAmt": 150.0, "minAmt": 1.0, "rateL": 3.6, "rateH": 5.2, "term": 12, "repay": "随借随还/先息后本", "industry": "全行业", "minTax": 0, "minInv": 80.0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "INV", "rate": 0.1, "desc": "年开票额×10%-负债"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.85}, "tag": "本地银行开票贷", "note": "重庆本地银行，线下沟通灵活，开票数据授信", "rawFormula": "年开票额×10%-负债", "excludeMortgageFromDebt": true}, {"id": "P_CQRC_ZXD", "name": "渝快振兴贷", "bank": "重庆农商行", "type": "流水贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 3.6, "rateH": 5.5, "term": 12, "repay": "随借随还", "industry": "全行业(商户优先)", "minTax": 0, "minInv": 0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "medium", "entity": ["个体户", "有限公司"], "formula": {"type": "QR", "rate": 0.3, "desc": "基于商户流水授信"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.7}, "tag": "重庆本地·随借随还", "note": "重庆农商行基于商户流水的振兴贷;审批高效;社区商户优先", "rawFormula": "月均商户流水×12×30%-经营负债", "excludeMortgageFromDebt": true}, {"id": "P_ICBC_ZZE", "name": "制造e贷", "bank": "工商银行", "type": "信用贷", "maxAmt": 300.0, "minAmt": 5.0, "rateL": 3.0, "rateH": 4.2, "term": 12, "repay": "先息后本/等额", "industry": "制造业", "minTax": 1.0, "minInv": 0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": {"type": "TAX", "rateA": 10, "rateB": 8, "rateM": 5, "rateDef": 6, "desc": "制造业专属数字信用贷"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 5}, "debtReq": {"ratio": 0.7}, "tag": "制造业专属", "note": "工行面向制造业小微企业的数字普惠信用贷款专属产品", "rawFormula": "按纳税数据授信,制造业专属通道", "excludeMortgageFromDebt": true}, {"id": "P_ABC_YHE", "name": "渝惠e贷", "bank": "农业银行", "type": "信用贷", "maxAmt": 200.0, "minAmt": 3.0, "rateL": 3.0, "rateH": 4.5, "term": 12, "repay": "随借随还", "industry": "全行业", "minTax": 0.5, "minInv": 0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": {"type": "TAX", "rateA": 9, "rateB": 7, "rateM": 5, "rateDef": 5, "desc": "融资协调机制专项产品"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 5}, "debtReq": {"ratio": 0.7}, "tag": "重庆专项", "note": "农行重庆分行融资协调机制专项产品;政策性支持", "rawFormula": "纳税+经营数据综合授信", "excludeMortgageFromDebt": true}, {"id": "P_CCB_YLC", "name": "渝链产业贷", "bank": "建设银行", "type": "专项贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.0, "rateH": 4.3, "term": 12, "repay": "先息后本", "industry": "现代制造业产业链", "minTax": 0, "minInv": 100.0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": {"type": "INV", "rate": 0.12, "desc": "产业链客群专属"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "needCert": "supply_chain"}, "debtReq": {"ratio": 0.7}, "tag": "产业链专属", "note": "建行重庆分行针对现代制造业产业链客群;核心企业上下游优先;线下沟通空间大", "rawFormula": "开票×12%-负债;产业链身份可提额", "excludeMortgageFromDebt": true}, {"id": "P_BCQ_KQD", "name": "普惠科企贷", "bank": "重庆银行", "type": "科技贷", "maxAmt": 500.0, "minAmt": 10.0, "rateL": 3.2, "rateH": 4.8, "term": 12, "repay": "先息后本", "industry": "科技型企业", "minTax": 0, "minInv": 0, "channel": "线上+线下", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司"], "formula": null, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "needCert": "科技型企业资质(高新/专精特新/科技型中小企业)"}, "debtReq": {"ratio": 0.75}, "tag": "科技企业专属", "note": "重庆银行科技金融专属产品;有高新/专精特新认定的企业优先;综合授信", "rawFormula": "按科技资质+经营数据综合授信", "excludeMortgageFromDebt": true}, {"id": "P_BCQ_SBD", "name": "设备更新贷", "bank": "重庆银行", "type": "专项贷", "maxAmt": 300.0, "minAmt": 10.0, "rateL": 3.2, "rateH": 4.5, "term": 36, "repay": "等额本息/分期", "industry": "制造业/加工业", "minTax": 0, "minInv": 0, "channel": "线下可谈", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.75}, "tag": "设备购置专用", "note": "重庆银行设备更新改造专项贷款;用于购置设备;期限可到3年;政策贴息可叠加", "rawFormula": "按设备购置合同金额一定比例授信", "excludeMortgageFromDebt": true}, {"id": "P_CIB_XSD", "name": "兴闪贷", "bank": "兴业银行", "type": "流水贷", "maxAmt": 50.0, "minAmt": 1.0, "rateL": 3.9, "rateH": 5.5, "term": 12, "repay": "先息后本/循环", "industry": "全行业", "minTax": 0, "minInv": 0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["个体户", "有限公司"], "formula": {"type": "QR", "rate": 0.28, "desc": "银联码流水授信"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 8}, "debtReq": {"ratio": 0.7}, "tag": "循环使用", "note": "兴业银行银联码流水贷;用码3个月以上可申请;年收款流水需覆盖信用负债;查询要求宽松(近3月≤8次)", "rawFormula": "年码流水×28%左右,需覆盖信用负债", "excludeMortgageFromDebt": true}, {"id": "P_SPDB_HSD", "name": "惠闪贷", "bank": "浦发银行", "type": "信用贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 3.6, "rateH": 5.4, "term": 12, "repay": "等额本息/先息后本", "industry": "全行业", "minTax": 0.5, "minInv": 0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司", "个体户"], "formula": null, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 5}, "debtReq": {"ratio": 0.7}, "tag": "线上小额", "note": "浦发面向小微企业和个体工商户的线上小额信用贷;法人持股>10%且近6月无变更;企业成立满18个月", "rawFormula": "纳税开票综合授信", "excludeMortgageFromDebt": true}, {"id": "P_BOCOM_HSD", "name": "惠商贷", "bank": "交通银行", "type": "流水贷", "maxAmt": 100.0, "minAmt": 1.0, "rateL": 3.6, "rateH": 5.0, "term": 12, "repay": "先息后本", "industry": "全行业", "minTax": 0, "minInv": 0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["个体户", "有限公司"], "formula": {"type": "QR", "rate": 0.3, "desc": "银联商户流水授信"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 6}, "debtReq": {"ratio": 0.7}, "tag": "银联商户", "note": "交行银联商户贷;银联商户开通满2年;个人在贷不超4家,企业对公不超3家;名下无未结清交行信用贷", "rawFormula": "银联商户流水×30%左右", "excludeMortgageFromDebt": true}, {"id": "P_PAB_ZYT", "name": "宅易通", "bank": "平安银行", "type": "抵押贷", "maxAmt": 1000.0, "minAmt": 100.0, "rateL": 2.6, "rateH": 4.5, "term": 120, "repay": "等额本息/先息后本(年还5%本金)", "industry": "全行业", "minTax": 0, "minInv": 0, "channel": "线下可谈", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "ASSET", "rate": 0.75, "desc": "住宅最高7.5成"}, "creditReq": {"noCurrentOverdue": true}, "debtReq": {"ratio": 0.85}, "tag": "高成数·放款快", "note": "平安宅易通;最高7.5成;接受当前执照/空壳;无需流水;贷款金额需大于100万;放款速度快", "rawFormula": "房产评估值×75%(住宅)", "excludeMortgageFromDebt": false}, {"id": "P_CITIC_DYD", "name": "抵押经营贷", "bank": "中信银行", "type": "抵押贷", "maxAmt": 1000.0, "minAmt": 50.0, "rateL": 2.9, "rateH": 4.5, "term": 240, "repay": "3年先息后本(到期无本续贷)", "industry": "全行业", "minTax": 0, "minInv": 0, "channel": "线下可谈", "isOnline": false, "offlineSpace": "large", "entity": ["有限公司", "个体户"], "formula": {"type": "ASSET", "rate": 0.7, "desc": "20年授信"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.85}, "tag": "20年授信·无本续贷", "note": "中信抵押经营贷;企业实际注册满1年;接受空壳或新执照;接受第三方抵押;随借随还", "rawFormula": "房产评估值×70%", "excludeMortgageFromDebt": false}, {"id": "P_BOC_YSD", "name": "银税贷", "bank": "中国银行", "type": "税贷", "maxAmt": 300.0, "minAmt": 5.0, "rateL": 3.2, "rateH": 4.35, "term": 12, "repay": "先息后本", "industry": "全行业", "minTax": 0.5, "minInv": 0, "channel": "纯线上", "isOnline": true, "offlineSpace": "small", "entity": ["有限公司"], "formula": {"type": "TAX", "rateA": 12, "rateB": 9, "rateM": 6, "rateDef": 7, "desc": "纳税A/B级倍数高"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2, "maxQuery3m": 6}, "debtReq": {"ratio": 0.7}, "tag": "高倍数税贷", "note": "中行银税贷;企业成立2年+;近两年平均纳税5000元以上;A/B级倍数高,优质客户系数可达20倍;近3月查询≤6次", "rawFormula": "年纳税×7-12倍(等级越高倍数越高)", "excludeMortgageFromDebt": true}, {"id": "P_BOC_SHD", "name": "商户贷", "bank": "中国银行", "type": "流水贷", "maxAmt": 300.0, "minAmt": 5.0, "rateL": 3.8, "rateH": 4.5, "term": 12, "repay": "先息后本", "industry": "全行业", "minTax": 0, "minInv": 0, "channel": "线下可谈", "isOnline": false, "offlineSpace": "large", "entity": ["个体户", "有限公司"], "formula": {"type": "QR", "rate": 0.32, "desc": "执照满3年可忽略查询"}, "creditReq": {"noCurrentOverdue": true, "no333Years": 2}, "debtReq": {"ratio": 0.7}, "tag": "查询宽松", "note": "中行商户贷;营业执照满3年+流水达标+无重大逾期,可忽略征信查询次数;线下沟通空间大", "rawFormula": "年码流水×32%左右-负债", "excludeMortgageFromDebt": true}];
 const PRODUCT_DB_BACKUP=PRODUCT_DB.slice();
 
 
@@ -664,6 +692,34 @@ function matchProducts(d) {
   const flowFake=d['是否刷码']||'';
   const flowFakeRisk=flowFake.includes('较多')||flowFake.includes('30%');
   const flowSuddenRisk=flowChange.includes('突增50%');
+  // ══ 额度精细化调整系数(基于银行真实风控逻辑) ══
+  const propVal=parseFloat(d['房产评估值万'])||0;       // 房产评估值(抵押贷专用)
+  const lenderCount=parseFloat(d['现有贷款机构数'])||0;  // 在贷机构数
+  const qrMonths=parseFloat(d['收款码使用月数'])||0;     // 收款码使用时长
+  const industry=d['行业']||'';
+  const inv=parseFloat(d['年开票额万'])||0;
+  // 流水波动系数:突增防注水打折,下降按趋势打折,稳定/自然增长不打折
+  let flowAdj=1.0;
+  if(flowChange.includes('突增'))flowAdj=0.7;
+  else if(flowChange.includes('大幅下降'))flowAdj=0.7;
+  else if(flowChange.includes('下降'))flowAdj=0.85;
+  // 行业系数:民生消费类(餐饮/零售/超市/便利店)流水贷上浮
+  let indAdj=1.0;
+  if(/餐饮|零售|超市|便利|食品|商贸/.test(industry))indAdj=1.1;
+  // 收款码使用时长:不满6个月大幅打折(银行要求连续6个月以上)
+  let qrAgeAdj=1.0;
+  if(qrMonths>0&&qrMonths<6)qrAgeAdj=0.6;
+  else if(qrMonths>=6&&qrMonths<12)qrAgeAdj=0.85;
+  // 多头在贷扣减:机构越多,新增银行越保守
+  let multiAdj=1.0;
+  if(lenderCount>=6)multiAdj=0.65;
+  else if(lenderCount>=4)multiAdj=0.8;
+  // 税贷成立年限调整:新企业打折
+  let yearsAdj=1.0;
+  if(years<2)yearsAdj=0.8;
+  // 纳税相对开票占比异常(开票大纳税极低,税贷给低)
+  let taxQualityAdj=1.0;
+  if(inv>0&&tax>0&&(tax/inv)<0.005)taxQualityAdj=0.85;
 
   const results={canDo:[],canTry:[],excluded:[]};
 
@@ -756,13 +812,63 @@ function matchProducts(d) {
     if(fm){
       // 经营贷产品用经营性负债（排除房贷）；抵押贷用总负债
       const debtForCalc = p.excludeMortgageFromDebt ? opDebt : debt;
-      if(fm.type==='QR'){const t=qr*12*fm.rate;estAmt=Math.max(0,t-debtForCalc);amtNote=`${qr}×12×${fm.rate*100}%-经营负债${debtForCalc}`;}
-      else if(fm.type==='CF'){const t=cf*12*(fm.rate||0.25);estAmt=Math.max(0,t-debtForCalc);amtNote=`对公${cf}×12-经营负债${debtForCalc}`;}
-      else if(fm.type==='TAX'){let rate=fm.rateDef||6;if(taxGrade==='A')rate=fm.rateA||9;else if(taxGrade==='B')rate=fm.rateB||8;else if(taxGrade==='M')rate=fm.rateM||6;const t=tax*rate;estAmt=Math.max(0,t-debtForCalc);amtNote=`纳税${tax}×${rate}-经营负债${debtForCalc}`;}
-      else if(fm.type==='ASSET'){if(assets>0&&!mortgage.includes('无抵押')){const t=assets*fm.rate;estAmt=Math.max(0,t-debt);}else{estAmt=0;}}
-      else if(fm.type==='ASSET2'){if(assets>0&&!mortgage.includes('无抵押'))estAmt=Math.max(0,assets*fm.rate-debt);}
+      if(fm.type==='QR'){
+        // 收款码流水贷:年流水×系数−经营负债,再按波动/行业/码龄/多头调整
+        const base=qr*12*fm.rate;
+        let t=Math.max(0,base-debtForCalc)*flowAdj*indAdj*qrAgeAdj*multiAdj;
+        estAmt=t;
+        const adjs=[];
+        if(flowAdj<1)adjs.push('流水波动打折');
+        if(qrAgeAdj<1)adjs.push('码龄不足打折');
+        if(indAdj>1)adjs.push('民生行业上浮');
+        if(multiAdj<1)adjs.push('多头在贷打折');
+        amtNote=`(${qr}×12×${fm.rate*100}%-经营负债${debtForCalc})${adjs.length?'×调整('+adjs.join('/')+')':''}`;
+      }
+      else if(fm.type==='CF'){
+        // 对公流水贷:同样按波动/多头调整
+        const base=cf*12*(fm.rate||0.25);
+        estAmt=Math.max(0,base-debtForCalc)*flowAdj*multiAdj;
+        amtNote=`对公${cf}×12×${(fm.rate||0.25)*100}%-经营负债${debtForCalc}${flowAdj<1||multiAdj<1?'×风险调整':''}`;
+      }
+      else if(fm.type==='TAX'){
+        // 税贷:纳税×等级倍数(A=10/B=8/M=5,产品自定义优先),新企业/纳税质量/多头调整
+        let rate=fm.rateDef||6;
+        if(taxGrade==='A')rate=fm.rateA||10;
+        else if(taxGrade==='B')rate=fm.rateB||8;
+        else if(taxGrade==='M')rate=fm.rateM||5;
+        const base=tax*rate;
+        estAmt=Math.max(0,base-debtForCalc)*yearsAdj*taxQualityAdj*multiAdj;
+        const adjs=[];
+        if(yearsAdj<1)adjs.push('成立不满2年');
+        if(taxQualityAdj<1)adjs.push('税票比偏低');
+        if(multiAdj<1)adjs.push('多头在贷');
+        amtNote=`纳税${tax}×${rate}倍-经营负债${debtForCalc}${adjs.length?'×调整('+adjs.join('/')+')':''}`;
+      }
+      else if(fm.type==='ASSET'||fm.type==='ASSET2'){
+        // 抵押贷:按抵押物类型定成数(住宅70%/商铺55%/厂房50%),二抵=评估×70%−房贷余额
+        const pv=propVal>0?propVal:assets; // 优先用房产评估值
+        if(pv>0&&!mortgage.includes('无抵押')){
+          let ltv=fm.rate||0.7;
+          if(mortgage.includes('商铺'))ltv=Math.min(ltv,0.55);
+          else if(mortgage.includes('厂房'))ltv=Math.min(ltv,0.5);
+          else if(mortgage.includes('二抵')||mortgage.includes('已有贷款')){
+            // 二抵:评估×70%−现有房贷余额
+            estAmt=Math.max(0,pv*0.7-mortDebt);
+            amtNote=`二抵:评估${pv}×70%-房贷余额${mortDebt}`;
+          }
+          if(!amtNote){
+            estAmt=Math.max(0,pv*ltv-mortDebt);
+            amtNote=`评估${pv}×${Math.round(ltv*100)}%${mortDebt>0?'-房贷'+mortDebt:''}`;
+          }
+        }else{estAmt=0;}
+      }
       else if(fm.type==='AR'){estAmt=-1;}
-      else if(fm.type==='INV'){const inv=parseFloat(d['年开票额万'])||0;const t=inv*fm.rate;estAmt=Math.max(0,t-debtForCalc);amtNote=`开票${inv}×${fm.rate*100}%-经营负债${debtForCalc}`;}
+      else if(fm.type==='INV'){
+        // 开票贷:开票×10%(保守口径,线下可谈15-20%)−经营负债,多头调整
+        const base=inv*fm.rate;
+        estAmt=Math.max(0,base-debtForCalc)*multiAdj;
+        amtNote=`开票${inv}×${fm.rate*100}%-经营负债${debtForCalc}${multiAdj<1?'×多头调整':''}(线下可争取至15-20%)`;
+      }
       if(fm.type!=='AR'&&estAmt>=0){
         estAmt=Math.min(estAmt,p.maxAmt);
         if(estAmt>0&&estAmt<p.minAmt)estAmt=0;
@@ -967,6 +1073,7 @@ ${ms}
     "script":"<沟通话术，有具体内容>"
   }],
   "priority_order":"<申请顺序：先申请哪家，再申请哪家，间隔多久，原因是什么>",
+  "plan_b":"<备选预案：如果优先推荐的银行被拒，下一步申请哪家、需要先调整什么（如结清某笔负债/养征信N个月），给中介一个清晰的B计划>",
   "debt_optimize":"<如果负债是主要障碍：建议结清哪笔，结清多少万，结清后哪些产品额度变正，具体数字>",
   "combo_plan":"<组合方案：几家银行组合，各自额度，总额度，注意事项>",
   "wait_plan":"<现在不能做但X个月后能做的，给出具体时间表>",
@@ -989,9 +1096,11 @@ ${ms}
 7. 如果征信"花"(查询多):推荐查询不敏感的产品,建议养征信3-6个月
 8. 如果有"当前逾期/连三累六/呆账":明确告知暂不符合银行准入,在wait_plan里给出具体恢复路径(结清后多久、需要养多久征信才能重新申请)`;
 
-  const res=await fetch('https://api.deepseek.com/chat/completions',{
+  const _dsUrl=DS_PROXY?DS_PROXY:'https://api.deepseek.com/chat/completions';
+  const _dsHeaders=DS_PROXY?{'Content-Type':'application/json'}:{'Content-Type':'application/json','Authorization':'Bearer '+DS_KEY};
+  const res=await fetch(_dsUrl,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+DS_KEY},
+    headers:_dsHeaders,
     body:JSON.stringify({model:'deepseek-chat',max_tokens:4000,temperature:0.1,
       messages:[
         {role:'system',content:'只输出JSON，不使用markdown代码块，不输出任何其他内容。'},
@@ -1404,6 +1513,27 @@ function resetDebtItems(){document.getElementById('debtItems').innerHTML=`<div c
 // ════════════════════════════════════════
 
 // 字段映射 + 值标准化
+
+// 降级结果:AI不可用时,用本地匹配引擎构造完整可渲染的结果
+function buildFallbackResult(d){
+  const mr=matchProducts(d);
+  const need=parseFloat(d['需求金额万'])||0;
+  const top=[...mr.canDo.slice(0,4).map(p=>({...p,category:'canDo'})),...mr.canTry.slice(0,3).map(p=>({...p,category:'canTry'}))];
+  const avg=top.length?Math.round(top.reduce((s,p)=>s+(p.passScore||50),0)/top.length):40;
+  return {
+    avgRisk:avg,
+    difficulty:avg>=65?'容易':avg>=50?'一般':avg>=35?'较难':'困难',
+    difficulty_reason:'基于产品匹配引擎的初步评估(AI深度分析暂不可用,稍后可重新分析获取完整话术与建议)',
+    profile:`${d.企业名称||'该客户'}:${d.企业类型||''}/${d.行业||''},匹配到${mr.canDo.length}个可直接申请产品、${mr.canTry.length}个线下可操作产品。`,
+    scores:{credit:avg,debt:avg,flow:avg,tax:avg,asset:avg,biz:avg},
+    topProducts:top,
+    products:top.map(p=>({why:p.amtNote?('额度测算:'+p.amtNote):'符合该产品准入条件',key_risk:(p.canFix&&p.canFix[0])||'',negotiation_tip:''})),
+    channel_advice:'',advice:'本次为基础匹配结果。建议网络恢复后重新分析,获取AI深度话术与执行路径。',
+    path:[],plan_b:'',
+    _matchResult:mr
+  };
+}
+
 function buildAnalysisData() {
   const f = form; // UI的全局form对象
   // 纳税等级:"A级"→"A"
@@ -1616,6 +1746,11 @@ function renderResultFused(d, r) {
     h += `</div>`;
   }
 
+  // ═══ 备选预案(Plan B) ═══
+  if(ai.plan_b){
+    h += `<div class="card" style="border-color:rgba(96,144,255,.3)"><div class="sh"><div class="sh-n" style="background:rgba(96,144,255,.15);color:#6090ff">🛟</div><span class="sh-t">备选预案（如果被拒怎么办）</span></div><div style="font-size:13px;color:var(--text);opacity:.9;line-height:1.8">${ai.plan_b}</div></div>`;
+  }
+
   // ═══ 顾问总结 ═══
   if(ai.advice){
     h += `<div class="card card-gold"><div class="sh"><div class="sh-n">💡</div><span class="sh-t">顾问总结</span></div><div style="font-size:13px;color:var(--text);line-height:1.8">${ai.advice}</div></div>`;
@@ -1647,8 +1782,10 @@ function renderResultFused(d, r) {
 function saveHistoryFused(d, result){
   const h = JSON.parse(localStorage.getItem('rzt_hist')||'[]');
   h.unshift({id:Date.now(), name:d.企业名称||'未命名客户', time:new Date().toLocaleString(), d, result});
-  if(h.length>30) h.pop();
+  if(h.length>100) h.pop();
   localStorage.setItem('rzt_hist', JSON.stringify(h));
+  // 同时存云端(按账号)
+  if(typeof saveHistoryToCloud==='function') saveHistoryToCloud(d, result);
 }
 
 // 存案例(融合版)
@@ -1657,8 +1794,10 @@ function saveCaseFromResultFused(){
   const {d,result,ai}=window._lastAnalysis;
   const top=(result.topProducts||[])[0]||{};
   const cs=JSON.parse(localStorage.getItem('rzt_cases')||'[]');
-  cs.unshift({id:Date.now(),行业:d.行业||'',企业类型:d.企业类型||'',产品:top.name||'',银行:top.bank||'',金额:top.estAmt||'',利率:top.rateL||'',客户情况:ai.profile||'',成功关键:ai.advice||'',时间:new Date().toLocaleDateString()});
+  const caseObj={行业:d.行业||'',企业类型:d.企业类型||'',产品:top.name||'',银行:top.bank||'',金额:top.estAmt||'',利率:top.rateL||'',客户情况:ai.profile||'',成功关键:ai.advice||'',时间:new Date().toLocaleDateString()};
+  cs.unshift({id:Date.now(),...caseObj});
   localStorage.setItem('rzt_cases',JSON.stringify(cs));
+  if(typeof saveCaseToCloud==='function') saveCaseToCloud(caseObj);
   toast('✅ 已存入案例库');
 }
 
@@ -1687,6 +1826,8 @@ let isGeti=false,curId='',ckw='',pType='',pBank='',dTimer=null;
 
 
 function goTab(name){
+  // 客户模式防御:禁止访问中介专属页面
+  if(typeof _isClientMode!=='undefined'&&_isClientMode&&['cases','prods','hist'].includes(name)){name='form';}
   PAGES.forEach(p=>{
     document.getElementById('pg-'+p).classList.toggle('on',p===name);
     document.getElementById('ni-'+p)?.classList.toggle('on',p===name);
@@ -1695,7 +1836,10 @@ function goTab(name){
   if(name==='cases')renderCases();
   if(name==='prods')renderProds();
   if(name==='hist')renderHist();
-  if(name==='contact')renderContact();
+  if(name==='contact'){
+    if(typeof _isClientMode!=='undefined'&&_isClientMode){renderClientAdvisorPage();}
+    else{renderContact();}
+  }
 }
 function openResult(record){
   document.getElementById('resultPg').classList.add('open');
@@ -1756,15 +1900,28 @@ async function onSubmit(){
   try{
     const d=buildAnalysisData();
     window._currentFormData=d;
-    const result=await callDS(d);
+    let result;
+    try{
+      result=await callDS(d);
+    }catch(e1){
+      // 兜底1:自动重试一次
+      showL('网络波动,正在重试...');
+      try{ result=await callDS(d); }
+      catch(e2){
+        // 兜底2:降级输出(不带AI话术,但产品匹配/额度/总授信都有,中介永远拿得到结果)
+        result=buildFallbackResult(d);
+        toast('AI分析暂时不可用,已生成基础匹配结果');
+      }
+    }
     hideL();
     btn.disabled=false;btn.textContent='✦ 开始 AI 分析';
     // 保存历史
     saveHistoryFused(d,result);
     // 云端保存
     saveClientToCloud(d,result).catch(e=>console.log('云端保存失败',e));
-    // 渲染结果到结果页
-    renderResultFused(d,result);
+    // 渲染结果到结果页(客户模式用友好版,过滤内部信息)
+    if(_isClientMode){renderResultClient(d,result);}
+    else{renderResultFused(d,result);}
     openResult();
   }catch(e){
     hideL();
@@ -1839,29 +1996,10 @@ function renderProds(){
 function setP(k,v){if(k==='t')pType=v;else pBank=v;renderProds()}
 
 // ── HISTORY ───────────────────────────────────────────────────────────────────
-function renderHist(){
-  const list=getH();
-  const el=document.getElementById('histList');
-  if(!list.length){el.innerHTML=`<div class="empty"><div class="empty-ico">🕐</div><div class="empty-txt">暂无历史记录</div></div>`;return}
-  el.innerHTML=list.map(h=>{
-    const s=h.result?.avgRisk||0;const sc=s>=70?'#3dd68c':s>=50?'#e0bc6a':'#f05060';
-    const top=(h.result?.top8||[])[0];
-    return `<div class="hitem" onclick="viewH('${h.id}')">
-      <div class="hh">
-        <div><div class="hname">${h.form?.企业名称||h.form?.行业||'未知客户'}${h.form?.企业类型?' · '+h.form.企业类型:''}</div><div class="htime">${h.time}</div></div>
-        <div style="display:flex;align-items:center;gap:5px"><div class="hs-wrap"><span class="hs-n" style="color:${sc}">${s}</span><span class="hs-u">分</span></div><button class="hdel" onclick="doDelH(event,'${h.id}')">🗑️</button></div>
-      </div>
-      <div class="htags">
-        ${h.result?.difficulty?`<span class="tag tg">${h.result.difficulty}</span>`:''}
-        ${h.form?.需求金额万?`<span class="tag ts">需求${h.form.需求金额万}万</span>`:''}
-        ${top?`<span class="tag tb">${top.name}</span>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
+
 function viewH(id){const r=getH().find(h=>h.id===id);if(r){curId=id;openResult(r)}}
 function doDelH(e,id){e.stopPropagation();if(confirm('确认删除？')){delH(id);renderHist();toast('已删除')}}
-function clearAllHist(){const l=getH();if(!l.length)return toast('暂无历史');if(confirm(`确定清空全部 ${l.length} 条？`)){l.forEach(h=>delH(h.id));renderHist();toast('已清空')}}
+
 
 // ── CONTACT ───────────────────────────────────────────────────────────────────
 function renderContact(){
@@ -1969,9 +2107,21 @@ async function loadProductsFromCloud(){
 
 function initPRODS(){ if(typeof PRODUCT_DB!=='undefined'){ PRODS=PRODUCT_DB.map(p=>({...p,tag:p.tag||'',channel:p.channel||'',rateMin:p.rateL,rateMax:p.rateH})); } }
 
-window.addEventListener('load',()=>{
+window.addEventListener('load',async ()=>{
   initPRODS();
   loadProductsFromCloud();
+  // 客户模式(专属链接进入):免登录,简化界面
+  if(detectClientMode()){
+    enterClientMode();
+  }else{
+    // 中介模式:检查登录状态
+    const logged = await authRestore();
+    if(!logged){
+      showAuthScreen();
+    }else{
+      await onLoginSuccess();
+    }
+  }
   try{const c=JSON.parse(localStorage.getItem('rzt_contact')||'{}');
     if(c.name){['name','title','company','phone','wechat','area','intro'].forEach(k=>{const el=document.getElementById('ct_'+k);if(el)el.value=c[k]||'';});}
   }catch(e){}
@@ -1984,17 +2134,63 @@ window.addEventListener('load',()=>{
 function saveContact(){
   const c={name:document.getElementById('ct_name').value.trim(),title:document.getElementById('ct_title').value.trim(),company:document.getElementById('ct_company').value.trim(),phone:document.getElementById('ct_phone').value.trim(),wechat:document.getElementById('ct_wechat').value.trim(),area:document.getElementById('ct_area').value.trim(),intro:document.getElementById('ct_intro').value.trim()};
   if(!c.name){toast('请填写姓名');return;}
+  // 保留已有refCode
+  const old=JSON.parse(localStorage.getItem('rzt_contact')||'{}');
+  if(old.refCode)c.refCode=old.refCode;
   localStorage.setItem('rzt_contact',JSON.stringify(c));
+  if(typeof saveContactToCloud==='function') saveContactToCloud(c);
   toast('✅ 已保存');
   if(typeof renderContact==='function')renderContact();
 }
 
+const CLIENT_STATUSES=[
+  {k:'analyzed',l:'待跟进',c:'#7878a8'},
+  {k:'contacted',l:'已联系',c:'#6090ff'},
+  {k:'applied',l:'已进件',c:'#e0bc6a'},
+  {k:'approved',l:'已批复',c:'#3dd68c'},
+  {k:'funded',l:'已放款',c:'#c8a84b'},
+  {k:'dropped',l:'放弃',c:'#666'}
+];
+let _histFilter='';
 function renderHist(){
   const h=JSON.parse(localStorage.getItem('rzt_hist')||'[]');
   const el=document.getElementById('histList');
   if(!el)return;
-  if(!h.length){el.innerHTML='<div style="text-align:center;color:var(--sub);padding:40px">暂无历史记录</div>';return;}
-  el.innerHTML=h.map(it=>`<div class="card" style="cursor:pointer" onclick="viewHist(${it.id})"><div style="font-size:14px;font-weight:600;color:var(--text)">${it.name}</div><div style="font-size:11px;color:var(--sub);margin-top:4px">${it.time} · 需求${(it.d&&it.d.需求金额万)||0}万 · 评分${(it.result&&it.result.avgRisk)||0}</div></div>`).join('');
+  // 状态筛选chips
+  const counts={};h.forEach(it=>{const s=it.status||'analyzed';counts[s]=(counts[s]||0)+1;});
+  let chips=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"><button class="chip${!_histFilter?' on':''}" onclick="_histFilter='';renderHist()">全部(${h.length})</button>`;
+  CLIENT_STATUSES.forEach(s=>{if(counts[s.k])chips+=`<button class="chip${_histFilter===s.k?' on':''}" onclick="_histFilter='${s.k}';renderHist()">${s.l}(${counts[s.k]})</button>`;});
+  chips+='</div>';
+  let list=h;
+  if(_histFilter)list=h.filter(it=>(it.status||'analyzed')===_histFilter);
+  if(!h.length){el.innerHTML='<div style="text-align:center;color:var(--sub);padding:40px">暂无客户记录<br><span style="font-size:11px;color:var(--sub2)">分析客户后自动出现在这里</span></div>';return;}
+  el.innerHTML=chips+(list.length?list.map(it=>{
+    const st=CLIENT_STATUSES.find(s=>s.k===(it.status||'analyzed'))||CLIENT_STATUSES[0];
+    return `<div class="card">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1;cursor:pointer" onclick="viewHist(${it.id})">
+          <div style="font-size:14px;font-weight:600;color:var(--text)">${it.name}</div>
+          <div style="font-size:11px;color:var(--sub);margin-top:4px">${it.time} · 需求${(it.d&&it.d.需求金额万)||0}万 · 评分${(it.result&&it.result.avgRisk)||0}</div>
+        </div>
+        <select onchange="setClientStatus(${it.id},this.value)" style="background:rgba(255,255,255,.05);border:1px solid ${st.c}55;border-radius:8px;color:${st.c};padding:6px 8px;font-size:12px;font-weight:600;font-family:inherit;outline:none">
+          ${CLIENT_STATUSES.map(s=>`<option value="${s.k}" ${s.k===(it.status||'analyzed')?'selected':''}>${s.l}</option>`).join('')}
+        </select>
+      </div>
+    </div>`;
+  }).join(''):'<div style="text-align:center;color:var(--sub);padding:30px;font-size:13px">该状态下暂无客户</div>');
+}
+function setClientStatus(id,status){
+  const h=JSON.parse(localStorage.getItem('rzt_hist')||'[]');
+  const it=h.find(x=>x.id===id);
+  if(!it)return;
+  it.status=status;
+  localStorage.setItem('rzt_hist',JSON.stringify(h));
+  renderHist();
+  // 云端同步(agent_clients按id)
+  if(typeof isLoggedIn==='function'&&isLoggedIn()){
+    sbAuth('agent_clients?id=eq.'+id,'PATCH',{status}).catch(e=>console.log('状态云端同步失败',e));
+  }
+  toast('✅ 状态已更新');
 }
 function viewHist(id){
   const h=JSON.parse(localStorage.getItem('rzt_hist')||'[]');
@@ -2016,8 +2212,10 @@ function renderCases(){
 function filterCases(kw){renderCases();}
 function saveNewCase(){
   const cs=JSON.parse(localStorage.getItem('rzt_cases')||'[]');
-  cs.unshift({id:Date.now(),行业:document.getElementById('m0').value.trim(),企业类型:document.getElementById('m1').value.trim(),产品:document.getElementById('m2').value.trim(),银行:document.getElementById('m3').value.trim(),金额:document.getElementById('m4').value,利率:document.getElementById('m5').value,客户情况:document.getElementById('m6').value.trim(),成功关键:document.getElementById('m7').value.trim(),障碍解决:document.getElementById('m8').value.trim(),时间:new Date().toLocaleDateString()});
+  const caseObj={行业:document.getElementById('m0').value.trim(),企业类型:document.getElementById('m1').value.trim(),产品:document.getElementById('m2').value.trim(),银行:document.getElementById('m3').value.trim(),金额:document.getElementById('m4').value,利率:document.getElementById('m5').value,客户情况:document.getElementById('m6').value.trim(),成功关键:document.getElementById('m7').value.trim(),障碍解决:document.getElementById('m8').value.trim(),时间:new Date().toLocaleDateString()};
+  cs.unshift({id:Date.now(),...caseObj});
   localStorage.setItem('rzt_cases',JSON.stringify(cs));
+  if(typeof saveCaseToCloud==='function') saveCaseToCloud(caseObj);
   closeM();renderCases();toast('✅ 案例已保存');
 }
 
@@ -2198,16 +2396,41 @@ async function renderDevStat(){
   el.innerHTML='加载中...';
   try{
     const clients=await sbGet('clients','select=id');
-    const apps=await sbGet('applications','select=result');
-    const brokers=await sbGet('brokers','select=id');
+    const apps=await sbGet('applications','select=result,product_name,bank_name,predicted_amt,actual_amt,amt_deviation');
+    const agents=await sbGet('agents','select=id').catch(()=>[]);
     const approved=(apps||[]).filter(a=>a.result==='approved').length;
     const total=(apps||[]).length;
-    el.innerHTML=`
-      <div>📊 注册中介:<b style="color:var(--gold2)">${(brokers||[]).length}</b>个</div>
+    let h=`
+      <div>📊 注册中介:<b style="color:var(--gold2)">${(agents||[]).length}</b>个</div>
       <div>👥 分析客户:<b style="color:var(--gold2)">${(clients||[]).length}</b>个</div>
       <div>📋 申请记录:<b style="color:var(--gold2)">${total}</b>笔</div>
       <div>✅ 已通过:<b style="color:#3dd68c">${approved}</b>笔</div>
       <div>📈 真实通过率:<b style="color:var(--gold2)">${total?Math.round(approved/total*100):0}%</b></div>`;
+    // ══ 产品偏差对账:预估vs实际,偏差大的提醒修参数 ══
+    const withActual=(apps||[]).filter(a=>a.actual_amt!=null&&a.predicted_amt>0);
+    if(withActual.length){
+      const byProd={};
+      withActual.forEach(a=>{
+        const k=(a.bank_name||'')+a.product_name;
+        if(!byProd[k])byProd[k]={name:a.product_name,bank:a.bank_name,devs:[],pred:0,act:0};
+        byProd[k].devs.push((a.actual_amt-a.predicted_amt)/a.predicted_amt);
+        byProd[k].pred+=a.predicted_amt;byProd[k].act+=a.actual_amt;
+      });
+      const rows=Object.values(byProd).map(p=>{
+        const avgDev=p.devs.reduce((s,x)=>s+x,0)/p.devs.length;
+        return {...p,avgDev,n:p.devs.length};
+      }).sort((a,b)=>Math.abs(b.avgDev)-Math.abs(a.avgDev));
+      h+=`<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)"><div style="font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:8px">📐 额度预估对账(实际vs预估)</div>`;
+      rows.slice(0,8).forEach(p=>{
+        const pct=Math.round(p.avgDev*100);
+        const warn=Math.abs(pct)>=25;
+        h+=`<div style="font-size:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);${warn?'color:#f0a028':'color:var(--sub)'}">${p.bank} ${p.name}:实际比预估${pct>=0?'高':'低'}<b>${Math.abs(pct)}%</b>(${p.n}笔)${warn?' ⚠️建议在产品管理里调整该产品参数':''}</div>`;
+      });
+      h+=`</div>`;
+    }else{
+      h+=`<div style="margin-top:12px;font-size:11px;color:var(--sub2)">暂无回填的实际批复数据。中介在结果页点"回填审批结果"后,这里会显示预估vs实际的偏差对账,帮你校准算法。</div>`;
+    }
+    el.innerHTML=h;
   }catch(e){el.innerHTML='<span style="color:#f05060">加载失败:'+e.message+'</span>';}
 }
 
@@ -2528,11 +2751,9 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
   <div class="r-section" style="background:linear-gradient(135deg,#fffbeb,#fff8f0)">
     <div class="sec-title">为什么选择我们</div>
     <div class="why-list">
-      <div class="why-item"><div class="why-icon">🎯</div><div class="why-txt"><b>精准匹配，不走弯路</b><br>覆盖重庆主流银行上百款融资产品，智能匹配最适合您的方案，避免盲目申请、反复被拒拉低征信。</div></div>
-      <div class="why-item"><div class="why-icon">💰</div><div class="why-txt"><b>额度最大化</b><br>专业测算多家银行组合授信，帮您拿到比自己单独申请更高的总额度。</div></div>
-      <div class="why-item"><div class="why-icon">⚡</div><div class="why-txt"><b>高效省心，全程协办</b><br>从材料准备到银行对接全程协助，专业人做专业事，省时省力。</div></div>
-      <div class="why-item"><div class="why-icon">🛡️</div><div class="why-txt"><b>规避风险，保护征信</b><br>合理规划申请节奏，避免多头申请、查询过多导致的风控拒贷。</div></div>
-      <div class="why-item"><div class="why-icon">🤝</div><div class="why-txt"><b>资源对接，成功率高</b><br>熟悉银行最新政策和审批偏好，显著提升获批成功率。</div></div>
+      <div class="why-item"><div class="why-icon">💰</div><div class="why-txt"><b>成本冰点</b><br>深度对接银行优惠政策，帮您拿到更低利率，同样额度，利息更省。</div></div>
+      <div class="why-item"><div class="why-icon">🚀</div><div class="why-txt"><b>内部通道</b><br>与多家银行直接合作，您的申请直达审批端，不走弯路。</div></div>
+      <div class="why-item"><div class="why-icon">🎯</div><div class="why-txt"><b>精准高效</b><br>从上百款产品中精准匹配最适合方案，提高获批率，少走弯路。</div></div>
     </div>
   </div>
 
@@ -2546,6 +2767,9 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
     </div>
   </div>
 
+  <div style="text-align:center;padding:14px 24px;background:#f0f7ff;font-size:12px;color:#2b6cb0;line-height:1.8">
+    💼 您也是贷款顾问/金融从业者？<br>免费使用本智能分析系统：<b>https://jhh895822-glitch.github.io/financing-analyst/</b><br><span style="font-size:11px;color:#7090b0">打开网址即可注册，智能匹配144款银行产品</span>
+  </div>
   <div class="disclaimer">
     免责声明：本报告为基于您提供信息的初步融资分析，仅供参考。最终可贷额度、利率及审批结果以银行实际审批为准。本报告不构成任何融资承诺或担保。
   </div>
@@ -2563,6 +2787,538 @@ body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;backgr
   document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(url), 2000);
   toast('✅ 报告已生成');
+}
+
+
+// ════════════════════════════════════════
+// 账号系统:Supabase Auth 注册/登录/会话
+// ════════════════════════════════════════
+let _authToken = null;
+let _authUser = null;  // {id, phone/email}
+let _agentProfile = null;
+
+// 用手机号注册(Supabase用email格式,我们用 手机号@rzt2026.com 包装)
+function phoneToEmail(phone){ return phone.trim()+'@rzt2026.com'; }
+
+async function authSignUp(phone, password, name){
+  const email = phoneToEmail(phone);
+  const res = await fetch(SUPABASE_URL+'/auth/v1/signup', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+    body:JSON.stringify({email, password})
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.msg||data.error_description||data.error||'注册失败');
+  // 注册成功后,Supabase可能直接返回session(若关闭邮箱验证)
+  if(data.access_token){
+    _authToken = data.access_token;
+    _authUser = data.user;
+    localStorage.setItem('rzt_token', data.access_token);
+    localStorage.setItem('rzt_refresh', data.refresh_token||'');
+    // 创建中介资料
+    await createAgentProfile(phone, name);
+  } else if(data.user){
+    // 需要登录获取token
+    return await authSignIn(phone, password, name);
+  }
+  return data;
+}
+
+async function authSignIn(phone, password, nameIfNew){
+  const email = phoneToEmail(phone);
+  const res = await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=password', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+    body:JSON.stringify({email, password})
+  });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.msg||data.error_description||data.error||'登录失败');
+  _authToken = data.access_token;
+  _authUser = data.user;
+  localStorage.setItem('rzt_token', data.access_token);
+  localStorage.setItem('rzt_refresh', data.refresh_token||'');
+  // 加载或创建中介资料
+  await loadAgentProfile();
+  if(!_agentProfile && nameIfNew){
+    await createAgentProfile(phone, nameIfNew);
+  }
+  return data;
+}
+
+async function authSignOut(){
+  _authToken=null; _authUser=null; _agentProfile=null;
+  localStorage.removeItem('rzt_token');
+  localStorage.removeItem('rzt_refresh');
+  location.reload();
+}
+
+// 用token恢复会话(打开页面时)
+async function authRestore(){
+  const token = localStorage.getItem('rzt_token');
+  if(!token) return false;
+  // 验证token是否有效
+  try{
+    const res = await fetch(SUPABASE_URL+'/auth/v1/user', {
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+token}
+    });
+    if(!res.ok){
+      // token过期,尝试刷新
+      return await authRefresh();
+    }
+    _authToken = token;
+    _authUser = await res.json();
+    await loadAgentProfile();
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+async function authRefresh(){
+  const refresh = localStorage.getItem('rzt_refresh');
+  if(!refresh) return false;
+  try{
+    const res = await fetch(SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY},
+      body:JSON.stringify({refresh_token:refresh})
+    });
+    if(!res.ok) return false;
+    const data = await res.json();
+    _authToken = data.access_token;
+    _authUser = data.user;
+    localStorage.setItem('rzt_token', data.access_token);
+    localStorage.setItem('rzt_refresh', data.refresh_token||'');
+    await loadAgentProfile();
+    return true;
+  }catch(e){ return false; }
+}
+
+// 带认证的Supabase请求(用中介自己的token,触发RLS隔离)
+async function sbAuth(path, method='GET', body=null){
+  const opts = {
+    method,
+    headers:{
+      'Content-Type':'application/json',
+      'apikey':SUPABASE_KEY,
+      'Authorization':'Bearer '+(_authToken||SUPABASE_KEY),
+      'Prefer': method==='POST'?'return=representation':(method==='PATCH'?'return=representation':'')
+    }
+  };
+  if(body) opts.body = JSON.stringify(body);
+  const res = await fetch(SUPABASE_URL+'/rest/v1/'+path, opts);
+  if(!res.ok){
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.message||'HTTP '+res.status);
+  }
+  const text = await res.text();
+  return text?JSON.parse(text):null;
+}
+
+// 中介资料
+async function createAgentProfile(phone, name){
+  const refCode = genMyRefCode();
+  try{
+    const rec = {auth_uid:_authUser.id, phone, name:name||'', ref_code:refCode};
+    const r = await sbAuth('agents', 'POST', rec);
+    _agentProfile = Array.isArray(r)?r[0]:r;
+  }catch(e){ console.log('创建资料失败',e); }
+}
+
+async function loadAgentProfile(){
+  try{
+    const r = await sbAuth('agents?auth_uid=eq.'+_authUser.id+'&select=*');
+    if(r && r.length){ _agentProfile = r[0]; }
+  }catch(e){ console.log('加载资料失败',e); }
+}
+
+function isLoggedIn(){ return !!_authToken && !!_authUser; }
+
+// ════════════════════════════════════════
+// 登录/注册界面 + 数据云端化
+// ════════════════════════════════════════
+
+// 显示登录页(全屏遮罩)
+function showAuthScreen(){
+  let el = document.getElementById('authScreen');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'authScreen';
+    document.body.appendChild(el);
+  }
+  el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:linear-gradient(160deg,#06061a,#0d0d24);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px';
+  el.innerHTML = `
+    <div style="text-align:center;margin-bottom:30px">
+      <div style="font-size:42px;margin-bottom:10px">💰</div>
+      <div style="font-size:26px;font-weight:800;background:linear-gradient(135deg,#c8a84b,#f5d78e);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">融资通</div>
+      <div style="font-size:13px;color:#7878a8;margin-top:6px">智能融资分析 · 中介专属</div>
+    </div>
+    <div style="width:100%;max-width:340px">
+      <div id="authTabs" style="display:flex;margin-bottom:20px;background:rgba(255,255,255,.05);border-radius:10px;padding:4px">
+        <div id="tabLogin" onclick="switchAuthMode('login')" style="flex:1;text-align:center;padding:10px;border-radius:8px;font-size:14px;cursor:pointer;background:var(--goldg,linear-gradient(135deg,#c8a84b,#f5d78e));color:#000;font-weight:700">登录</div>
+        <div id="tabReg" onclick="switchAuthMode('reg')" style="flex:1;text-align:center;padding:10px;border-radius:8px;font-size:14px;cursor:pointer;color:#7878a8">注册</div>
+      </div>
+      <div id="regNameField" style="display:none;margin-bottom:14px">
+        <input id="authName" placeholder="您的姓名" style="width:100%;padding:13px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#f0f0ff;font-size:15px;outline:none">
+      </div>
+      <div style="margin-bottom:14px">
+        <input id="authPhone" type="tel" placeholder="手机号" style="width:100%;padding:13px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#f0f0ff;font-size:15px;outline:none">
+      </div>
+      <div style="margin-bottom:18px">
+        <input id="authPwd" type="password" placeholder="密码(至少6位)" style="width:100%;padding:13px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#f0f0ff;font-size:15px;outline:none">
+      </div>
+      <button id="authSubmitBtn" onclick="doAuth()" style="width:100%;padding:14px;background:linear-gradient(135deg,#c8a84b,#f5d78e);color:#000;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer">登录</button>
+      <div id="authErr" style="color:#f05060;font-size:13px;margin-top:12px;text-align:center;display:none"></div>
+      <div style="font-size:11px;color:#4a4a70;text-align:center;margin-top:20px;line-height:1.6">登录即表示同意服务条款<br>数据加密存储,换设备登录数据不丢失</div>
+    </div>`;
+}
+
+let _authMode = 'login';
+function switchAuthMode(mode){
+  _authMode = mode;
+  document.getElementById('tabLogin').style.background = mode==='login'?'linear-gradient(135deg,#c8a84b,#f5d78e)':'transparent';
+  document.getElementById('tabLogin').style.color = mode==='login'?'#000':'#7878a8';
+  document.getElementById('tabLogin').style.fontWeight = mode==='login'?'700':'400';
+  document.getElementById('tabReg').style.background = mode==='reg'?'linear-gradient(135deg,#c8a84b,#f5d78e)':'transparent';
+  document.getElementById('tabReg').style.color = mode==='reg'?'#000':'#7878a8';
+  document.getElementById('tabReg').style.fontWeight = mode==='reg'?'700':'400';
+  document.getElementById('regNameField').style.display = mode==='reg'?'block':'none';
+  document.getElementById('authSubmitBtn').textContent = mode==='reg'?'注册并进入':'登录';
+  document.getElementById('authErr').style.display='none';
+}
+
+async function doAuth(){
+  const phone = document.getElementById('authPhone').value.trim();
+  const pwd = document.getElementById('authPwd').value;
+  const name = document.getElementById('authName')?.value.trim()||'';
+  const errEl = document.getElementById('authErr');
+  const btn = document.getElementById('authSubmitBtn');
+  errEl.style.display='none';
+
+  if(!/^1\d{10}$/.test(phone)){ errEl.textContent='请输入正确的手机号'; errEl.style.display='block'; return; }
+  if(pwd.length<6){ errEl.textContent='密码至少6位'; errEl.style.display='block'; return; }
+  if(_authMode==='reg' && !name){ errEl.textContent='请填写姓名'; errEl.style.display='block'; return; }
+
+  btn.disabled=true; btn.textContent='处理中...';
+  try{
+    if(_authMode==='reg'){
+      await authSignUp(phone, pwd, name);
+    }else{
+      await authSignIn(phone, pwd);
+    }
+    // 成功:隐藏登录页,加载数据
+    document.getElementById('authScreen').remove();
+    await onLoginSuccess();
+  }catch(e){
+    let msg = e.message||'操作失败';
+    if(msg.includes('already registered')||msg.includes('already been registered')) msg='该手机号已注册,请直接登录';
+    if(msg.includes('Invalid login')) msg='手机号或密码错误';
+    errEl.textContent = msg;
+    errEl.style.display='block';
+    btn.disabled=false;
+    btn.textContent = _authMode==='reg'?'注册并进入':'登录';
+  }
+}
+
+// 登录成功后:加载该中介的云端数据
+async function onLoginSuccess(){
+  // 同步名片到本地(供报告等使用)
+  if(_agentProfile){
+    const c = {
+      name:_agentProfile.name||'', title:_agentProfile.title||'',
+      company:_agentProfile.company||'', phone:_agentProfile.phone||'',
+      wechat:_agentProfile.wechat||'', area:_agentProfile.area||'',
+      intro:_agentProfile.intro||'', refCode:_agentProfile.ref_code||''
+    };
+    localStorage.setItem('rzt_contact', JSON.stringify(c));
+  }
+  // 拉取云端客户历史
+  await loadCloudHistory();
+  await loadCloudCases();
+  // 刷新界面
+  if(typeof renderHist==='function') renderHist();
+  if(typeof renderCases==='function') renderCases();
+  if(typeof renderContact==='function') renderContact();
+  // 填充名片表单
+  const c = JSON.parse(localStorage.getItem('rzt_contact')||'{}');
+  ['name','title','company','phone','wechat','area','intro'].forEach(k=>{
+    const elx=document.getElementById('ct_'+k); if(elx)elx.value=c[k]||'';
+  });
+}
+
+// ── 云端数据:历史记录 ──
+async function loadCloudHistory(){
+  try{
+    const r = await sbAuth('agent_clients?agent_uid=eq.'+_authUser.id+'&order=created_at.desc&limit=100');
+    if(r){
+      const hist = r.map(row=>({
+        id:row.id, name:row.client_name||'未命名',
+        time:new Date(row.created_at).toLocaleString(),
+        d:row.form_data, result:row.result_data, status:row.status
+      }));
+      localStorage.setItem('rzt_hist', JSON.stringify(hist));
+    }
+  }catch(e){ console.log('加载云端历史失败',e); }
+}
+
+async function saveHistoryToCloud(d, result){
+  if(!isLoggedIn()) return;
+  try{
+    await sbAuth('agent_clients', 'POST', {
+      agent_uid:_authUser.id,
+      client_name:d.企业名称||'未命名客户',
+      form_data:d, result_data:result, status:'analyzed'
+    });
+  }catch(e){ console.log('保存云端历史失败',e); }
+}
+
+// ── 云端数据:案例 ──
+async function loadCloudCases(){
+  try{
+    const r = await sbAuth('agent_cases?agent_uid=eq.'+_authUser.id+'&order=created_at.desc');
+    if(r){
+      const cases = r.map(row=>({id:row.id, ...row.data}));
+      localStorage.setItem('rzt_cases', JSON.stringify(cases));
+    }
+  }catch(e){ console.log('加载云端案例失败',e); }
+}
+
+async function saveCaseToCloud(caseObj){
+  if(!isLoggedIn()) return;
+  try{
+    await sbAuth('agent_cases', 'POST', {agent_uid:_authUser.id, data:caseObj});
+  }catch(e){ console.log('保存云端案例失败',e); }
+}
+
+// ── 名片保存到云端 ──
+async function saveContactToCloud(c){
+  if(!isLoggedIn()||!_agentProfile) return;
+  try{
+    await sbAuth('agents?auth_uid=eq.'+_authUser.id, 'PATCH', {
+      name:c.name, title:c.title, company:c.company,
+      phone:c.phone, wechat:c.wechat, area:c.area, intro:c.intro
+    });
+  }catch(e){ console.log('保存云端名片失败',e); }
+}
+
+
+// ════════════════════════════════════════
+// 客户/中介双视图:客户模式(通过专属链接进入)
+// ════════════════════════════════════════
+let _isClientMode = false;
+let _boundBroker = null; // 绑定的中介名片
+
+function detectClientMode(){
+  const ref = new URLSearchParams(location.search).get('ref');
+  if(ref){
+    localStorage.setItem('rzt_role','client');
+    localStorage.setItem('rzt_bound_ref',ref);
+    _activeRefCode = ref;
+    return true;
+  }
+  // 之前用ref进来过,保持客户模式(除非走中介入口)
+  if(localStorage.getItem('rzt_role')==='client'){
+    _activeRefCode = localStorage.getItem('rzt_bound_ref')||'';
+    return true;
+  }
+  return false;
+}
+
+function enterClientMode(){
+  _isClientMode = true;
+  // 隐藏中介专属Tab:案例库/产品库/历史
+  ['ni-cases','ni-prods','ni-hist'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.style.display='none';
+  });
+  // 顾问Tab改名"我的顾问"
+  const ct=document.getElementById('ni-contact');
+  if(ct){const lbl=ct.querySelector('.ni-lbl');if(lbl)lbl.textContent='我的顾问';}
+  // 隐藏中介编辑名片/退出登录/开发者入口(客户不需要)
+  // 顾问页改为客户视图
+  renderClientAdvisorPage();
+  // 拉取绑定中介名片
+  loadBrokerCard();
+}
+
+// 按ref_code匿名拉取中介名片
+async function loadBrokerCard(){
+  const ref = localStorage.getItem('rzt_bound_ref')||_activeRefCode;
+  if(!ref) return;
+  try{
+    const r = await sbFetch('agents?ref_code=eq.'+encodeURIComponent(ref)+'&select=name,title,company,phone,wechat,area,intro');
+    if(r && r.length){
+      _boundBroker = r[0];
+      renderClientAdvisorPage();
+    }
+  }catch(e){ console.log('拉取顾问名片失败',e); }
+}
+
+// 客户视图的顾问页:只显示绑定中介的名片
+function renderClientAdvisorPage(){
+  if(!_isClientMode) return;
+  const pg=document.getElementById('pg-contact');
+  if(!pg) return;
+  const b=_boundBroker;
+  pg.innerHTML = `<div class="pi">
+    <div style="text-align:center;padding:30px 0 16px">
+      <div style="font-size:38px">👤</div>
+      <div style="font-size:18px;font-weight:800;color:var(--gold2);margin-top:8px">我的专属融资顾问</div>
+    </div>
+    ${b?`
+    <div class="card card-gold">
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:22px;font-weight:800;color:var(--text)">${b.name||'融资顾问'}</div>
+        ${b.title?`<div style="font-size:13px;color:var(--gold2);margin-top:4px">${b.title}</div>`:''}
+        ${b.company?`<div style="font-size:12px;color:var(--sub);margin-top:6px">🏢 ${b.company}</div>`:''}
+        ${b.area?`<div style="font-size:12px;color:var(--sub);margin-top:2px">📍 ${b.area}</div>`:''}
+      </div>
+      ${b.intro?`<div style="font-size:12px;color:var(--sub);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">${b.intro}</div>`:''}
+      <div style="display:flex;gap:10px;margin-top:16px">
+        ${b.phone?`<a href="tel:${b.phone}" style="flex:1;text-align:center;padding:12px;background:linear-gradient(135deg,#c8a84b,#f5d78e);color:#000;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">📞 拨打电话</a>`:''}
+        ${b.wechat?`<button onclick="copyBrokerWechat('${(b.wechat||'').replace(/'/g,'')}')" style="flex:1;padding:12px;background:rgba(61,214,140,.15);color:#3dd68c;border:1px solid rgba(61,214,140,.4);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">💬 复制微信</button>`:''}
+      </div>
+    </div>`:`
+    <div class="card"><div style="text-align:center;color:var(--sub);padding:20px;font-size:13px">顾问信息加载中...<br>如长时间未显示,请联系发送链接给您的顾问</div></div>`}
+    <div style="font-size:11px;color:var(--sub2);text-align:center;margin-top:20px;line-height:1.7">融资通 · 智能融资分析<br>填写企业信息,智能匹配最适合您的融资方案</div>
+    <div style="text-align:center;margin-top:24px"><span onclick="exitClientMode()" style="font-size:11px;color:var(--sub2);cursor:pointer;text-decoration:underline">我是融资顾问,进入工作台</span></div>
+  </div>`;
+}
+function exitClientMode(){
+  if(!confirm('切换到顾问工作台?(客户请勿点击)'))return;
+  localStorage.removeItem('rzt_role');
+  localStorage.removeItem('rzt_bound_ref');
+  location.href=location.pathname; // 去掉ref参数刷新
+}
+
+function copyBrokerWechat(wx){
+  try{
+    const ta=document.createElement('textarea');
+    ta.value=wx;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('✅ 微信号已复制:'+wx);
+  }catch(e){prompt('微信号:',wx);}
+}
+
+// ════ 客户版结果页(过滤全部内部信息) ════
+function renderResultClient(d, r){
+  const ai = r;
+  const score = r.avgRisk||0;
+  let feas,fc;
+  if(score>=70){feas='优良';fc='#3dd68c';}
+  else if(score>=55){feas='良好';fc='#3dd68c';}
+  else if(score>=40){feas='中等';fc='#e0bc6a';}
+  else{feas='待优化';fc='#f0a028';}
+
+  const mr = r._matchResult||{canDo:[],canTry:[]};
+  const tc = calcTotalCredit(mr,d);
+  const total = tc?Math.round((tc.recommendTotal||tc.total)*1.1):0;
+
+  // 推荐方案:只取可做的前3,客户友好展示
+  const canDoP=(r.topProducts||[]).filter(p=>p.category==='canDo').slice(0,3);
+  const showP=canDoP.length?canDoP:(r.topProducts||[]).slice(0,2);
+
+  function amtRange(a){
+    if(!a||a<=0)return '综合评估';
+    return Math.round(a*0.8)+'–'+Math.round(a*1.1)+'万';
+  }
+  function cleanText(t){
+    return (t||'').replace(/通过率\d+%?/g,'').replace(/线下可沟通|可操作空间|刷码|话术/g,'').trim();
+  }
+
+  let h='';
+  // 可行性+总授信
+  h+=`<div class="card card-gold" style="text-align:center">
+    <div style="display:flex;justify-content:center;gap:40px;padding:8px 0">
+      <div><div style="font-size:11px;color:var(--sub);margin-bottom:6px">融资可行性</div><div style="font-size:26px;font-weight:800;color:${fc}">${feas}</div></div>
+      <div><div style="font-size:11px;color:var(--sub);margin-bottom:6px">预估可获融资</div><div style="font-size:26px;font-weight:800;background:var(--goldg);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">最高${total}万</div></div>
+    </div>
+  </div>`;
+
+  // 企业画像(客户友好,清理内部词)
+  if(ai.profile){
+    h+=`<div class="card"><div class="sh"><div class="sh-n">📋</div><span class="sh-t">您的企业评估</span></div><div style="font-size:13px;color:var(--text);line-height:1.8;opacity:.9">${cleanText(ai.profile)}</div></div>`;
+  }
+
+  // 推荐方案
+  if(showP.length){
+    h+=`<div class="card"><div class="sh"><div class="sh-n" style="background:rgba(61,214,140,.15);color:#3dd68c">✓</div><span class="sh-t">为您推荐的融资方案</span></div>`;
+    showP.forEach((p,i)=>{
+      h+=`<div style="background:rgba(255,255,255,.03);border:1px solid ${i===0?'rgba(200,168,75,.4)':'rgba(255,255,255,.08)'};border-radius:12px;padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:var(--goldg);color:#000;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px">方案${['一','二','三'][i]||i+1}</span>
+          <span style="font-size:14px;font-weight:700;color:var(--text)">${p.bank} · ${p.name}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text);line-height:2;opacity:.9">
+          <div>✓ 预计额度:<b style="color:var(--gold3)">${amtRange(p.estAmt)}</b></div>
+          <div>✓ 参考年化:<b style="color:var(--gold3)">${p.rateL}% 起</b></div>
+          <div>✓ 贷款期限:${p.term}个月</div>
+        </div>
+      </div>`;
+    });
+    h+=`</div>`;
+  }else{
+    h+=`<div class="card"><div style="font-size:13px;color:var(--sub);line-height:1.8;text-align:center;padding:10px">当前资质暂未匹配到合适方案<br>建议联系您的专属顾问详细评估</div></div>`;
+  }
+
+  // 顾问联系卡(核心转化点)
+  const b=_boundBroker;
+  h+=`<div class="card card-gold">
+    <div style="text-align:center;padding:6px 0">
+      <div style="font-size:13px;color:var(--gold2);margin-bottom:8px">下一步:联系您的专属顾问,协助办理</div>
+      <div style="font-size:18px;font-weight:800;color:var(--text)">${b?(b.name||'融资顾问'):'融资顾问'}</div>
+      ${b&&b.company?`<div style="font-size:12px;color:var(--sub);margin-top:4px">${b.company}</div>`:''}
+      <div style="display:flex;gap:10px;margin-top:14px">
+        ${b&&b.phone?`<a href="tel:${b.phone}" style="flex:1;text-align:center;padding:12px;background:linear-gradient(135deg,#c8a84b,#f5d78e);color:#000;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">📞 立即咨询</a>`:''}
+        ${b&&b.wechat?`<button onclick="copyBrokerWechat('${(b.wechat||'').replace(/'/g,'')}')" style="flex:1;padding:12px;background:rgba(61,214,140,.15);color:#3dd68c;border:1px solid rgba(61,214,140,.4);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">💬 加微信</button>`:''}
+      </div>
+    </div>
+  </div>`;
+
+  h+=`<div style="font-size:10px;color:var(--sub2);text-align:center;line-height:1.7;padding:10px 14px">本分析为初步评估,最终额度、利率以银行实际审批为准<br>本结果不构成任何融资承诺</div>
+  <button class="btn-o" style="width:100%;margin-top:6px" onclick="closeResult()">← 返回修改资料</button>
+  <div style="height:20px"></div>`;
+
+  document.getElementById('resultContent').innerHTML=h;
+}
+
+
+// ══ 快速分析 ══
+function toggleQuick(){
+  const p=document.getElementById('quickPanel');
+  const a=document.getElementById('quickArrow');
+  const open=p.style.display==='none';
+  p.style.display=open?'block':'none';
+  a.textContent=open?'▲':'▼';
+}
+async function quickAnalyze(){
+  const t=document.getElementById('q_type').value;
+  const ind=document.getElementById('q_industry').value.trim();
+  const cr=document.getElementById('q_credit').value;
+  const qrv=document.getElementById('q_qr').value||'0';
+  const taxv=document.getElementById('q_tax').value||'0';
+  const need=document.getElementById('q_need').value;
+  if(!t)return showErr('请选择企业类型');
+  if(!ind)return showErr('请填写行业');
+  if(!cr)return showErr('请选择征信情况');
+  if(!need||parseFloat(need)<=0)return showErr('请填写需求金额');
+  showErr('');
+  // 把快速字段灌入form,其余用宽松默认值
+  form.企业类型=t;form.行业=ind;form.法人征信=cr;
+  form.月均银联收款码流水万=qrv;form.年纳税万=taxv;form.需求金额万=need;
+  form.成立年限=form.成立年限||'3';
+  form.收款码使用月数=form.收款码使用月数||'12';
+  form.流水近期变化=form.流水近期变化||'稳定';
+  form.是否刷码=form.是否刷码||'没有，全部真实';
+  form.涉诉情况='无';
+  // 同步到主表单显示
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;};
+  set('f_企业类型',t);set('f_行业',ind);set('f_法人征信',cr);
+  set('f_月均银联收款码流水万',qrv);set('f_年纳税万',taxv);set('f_需求金额万',need);
+  if(typeof fvBiz==='function')fvBiz(t);
+  await onSubmit();
 }
 
 </script>
